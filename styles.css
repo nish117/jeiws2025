@@ -11,21 +11,26 @@ header {
     overflow: hidden; /* Hide overflow */
 }
 
+html {
+    scroll-behavior: smooth;
+}
 .company-title {
     color: white;
 }
 
 .company-maintitle {
-    font-size: 3rem;
+    white-space:nowrap;
+    font-size: 27px;
 }
 .company-subtitle {
-    font-size: 1.8rem;
+    white-space:nowrap;
+    font-size: 1rem;
 }
 .navbar {
     display: flex;
     justify-content: space-between; /* Space between logo and call button */
     align-items: center;
-    padding: 10px;
+    padding: 5px;
     background-color: rgb(171 180 145 / 70%); /* Semi-transparent background */
     position: absolute; /* Position absolute to overlay on video */
     width: 100%; /* Full width */
@@ -33,7 +38,7 @@ header {
 }
 
 .logo img {
-    height: 90px; /* Set a specific height for the logo */
+    height: 50px; /* Set a specific height for the logo */
     width: auto; /* Maintain aspect ratio */
     margin-right: 10px; /* Space between logo and company name */
 }
@@ -43,9 +48,11 @@ header {
     list-style: none;
     display: flex;
     margin: 0;
-    padding: 0;
+    padding: inherit;
     flex-grow: 1;
-    justify-content: center;
+    justify-content: right;
+    margin-right: 20px;
+    font-size: medium;
 }
 
 /* Hide the hamburger icon on large screens */
@@ -62,6 +69,7 @@ header {
     text-decoration: none;
     font-weight: bold;
     transition: color 0.3s; /* Smooth transition for hover effect */
+    white-space: nowrap;
 }
 
 .nav-links a:hover {
@@ -74,10 +82,10 @@ header {
 }
 
 .call-button {
-    margin-right: 25px;
+    margin-right: 12px;
     background-color: #ff5722; /* Call button color */
     color: white;
-    padding: 10px 20px;
+    padding: 4px 7px;
     text-decoration: none;
     border-radius: 5px;
     transition: background-color 0.3s; /* Smooth transition for hover effect */
@@ -380,6 +388,12 @@ h1 {
 
 /* Responsive styles */
 @media (max-width: 768px) {
+    .company-maintitle {
+        font-size: 24px;
+    }
+    .company-subtitle {
+        font-size: 14px;
+    }
     .navbar {
         position: relative;
     }
@@ -397,7 +411,7 @@ h1 {
         padding: 0;
     }
 
-    .nav-links.active {
+    .nav-links.show {
         display: flex; /* Show links when active */
     }
 
@@ -412,6 +426,7 @@ h1 {
         font-size: 30px;
         color: white;
         cursor: pointer;
+        margin-right: 20px;
     }
     .contact-section {
         flex-direction: column; /* Stack map and form vertically */
@@ -427,4 +442,33 @@ h1 {
         height: 250px; /* Adjust height for smaller screens */
     }
 }
+
+/* Extra Small Screens (max-width: 480px) */
+ @media (max-width: 480px) {
+    h1, h2 {
+        font-size: 1.5rem;
+    }
+   .company-maintitle {
+        font-size: 15px;
+    }
+    .company-subtitle {
+        font-size: 9px;
+    }
+
+    .cta-button {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .call-button {
+        font-size: 14px;
+        padding: 8px 15px;
+    }
+
+    .go-to-top {
+        bottom: 15px;
+        right: 15px;
+        padding: 8px 10px;
+    }
+} 
 

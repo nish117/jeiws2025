@@ -11,16 +11,13 @@
         <nav class="navbar">
             <div class="logo">
                 <img src="logo.png" alt="Company Logo"> 
-                
             </div>
             <div class="company-title">
                 <span class="company-maintitle"><Strong>J.E. Infrastructrure</Strong></span>
                 <br> <span class="company-subtitle">Waterproofing & Services Pvt. Ltd.</span> 
             </div>
             
-            <div class="hamburger" id="hamburger">
-                &#9776; <!-- Hamburger icon -->
-            </div>
+           
             <ul class="nav-links" id="nav-links">
                 <li><a href="#about">About Us</a></li>
                 <li><a href="#team">Our Team</a></li>
@@ -29,7 +26,10 @@
                 <li><a href="#contact">Contact Us</a></li>
             </ul>
             <div class="call-us">
-                <a href="tel:+977-9841618841" class="call-button">Call Us Now</a> <!-- Replace with your phone number -->
+                <a href="tel:+977-9841618841" class="call-button">Call Now</a> <!-- Replace with your phone number -->
+            </div>
+             <div class="hamburger" id="hamburger">
+                &#9776; <!-- Hamburger icon -->
             </div>
         </nav>
         <div class="video-background">
@@ -47,7 +47,7 @@
 
     <section id="about">
         <h2>About Us</h2>
-        <p>At Your Company Name, we are dedicated to providing top-notch construction services that meet the highest standards of quality and safety. With years of experience in the industry, our team of skilled professionals is committed to turning your vision into reality. Whether it's residential, commercial, or industrial projects, we have the expertise to handle it all. Our mission is to build lasting relationships with our clients through transparency, integrity, and exceptional service.</p>
+        <p>At <strong>J.E. Infrastructrure Waterproofing & Services Pvt. Ltd.,</strong> we are dedicated to providing top-notch construction services that meet the highest standards of quality and safety. With years of experience in the industry, our team of skilled professionals is committed to turning your vision into reality. Whether it's residential, commercial, or industrial projects, we have the expertise to handle it all. Our mission is to build lasting relationships with our clients through transparency, integrity, and exceptional service.</p>
     </section>
 
     <section id="services">
@@ -81,29 +81,29 @@
         <h2>Meet Our Team</h2>
         <div class="team-container">
             <div class="team-member">
-                <img src="team-member1.jpg" alt="Team Member 1">
-                <h3>John Doe</h3>
-                <p>Project Manager</p>
+                <img src="nishant.jpg" alt="Team Member 1">
+                <h3>Nishant Bajracharya</h3>
+                <p>Managing Director</p>
             </div>
             <div class="team-member">
-                <img src="team-member2.jpg" alt="Team Member 2">
-                <h3>Jane Smith</h3>
-                <p>Lead Architect</p>
+                <img src="sudarsana.jpg" alt="Team Member 2">
+                <h3>Sudarsana Shakya</h3>
+                <p>Chief Engineer</p>
             </div>
             <div class="team-member">
-                <img src="team-member3.jpg" alt="Team Member 3">
-                <h3>Mike Johnson</h3>
-                <p>Construction Engineer</p>
-            </div>
-            <div class="team-member">
-                <img src="team-member3.jpg" alt="Team Member 3">
-                <h3>Mike Johnson</h3>
-                <p>Construction Engineer</p>
+                <img src="pragya.jpg" alt="Team Member 3">
+                <h3>Pragya Shakya</h3>
+                <p>Chartered Accountant</p>
             </div>
             <div class="team-member">
                 <img src="team-member3.jpg" alt="Team Member 3">
-                <h3>Mike Johnson</h3>
-                <p>Construction Engineer</p>
+                <h3>Aman Bajracharya</h3>
+                <p>Civil Engineer</p>
+            </div>
+            <div class="team-member">
+                <img src="team-member3.jpg" alt="Team Member 3">
+                <h3>Nishant Chandra Shah</h3>
+                <p>Civil Engineer</p>
             </div>
             <!-- Add more team members as needed -->
         </div>
@@ -209,7 +209,7 @@
     <footer>
         <p>&copy; 2025 J.E. Infrastructure Waterproofing & Services Pvt. Ltd. All rights reserved.</p>
         <p>Address: Sanepa, Lalitpur</p>
-        <p>Email: <a href="mailto:info@jeinfra.com">info@jeinfra.com</a></p>
+        <p>Email: <a href="mailto:jeiwservices@gmail.com">jeiwservices@gmail.com</a></p>
         <p>Phone: <a href="tel:+9779841618841">+977-9841618841</a></p>
     </footer>
     <button id="goToTop" class="go-to-top">↑ Go to Top</button>
@@ -221,8 +221,13 @@
 
     // Toggle the 'active' class on the nav-links when the hamburger is clicked
     hamburger.addEventListener('click', () => {
+        navLinks.classList.toggle('show');
+        hamburger.innerHTML = navLinks.classList.contains('show') ? '&#10006;' : '&#9776;';
         navLinks.classList.toggle('active');
     });
+    // hamburger.addEventListener('click', () => {
+    //     navLinks.classList.toggle('active');
+    // });
 
     // Ensure nav-links are visible on larger screens and not toggled accidentally
     window.addEventListener('resize', () => {
