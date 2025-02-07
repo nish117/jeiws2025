@@ -1,0 +1,480 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    /*background: linear-gradient(to bottom, #0072b8, #00aaff);*/ /* Gradient from a darker blue to a lighter blue */
+    color: #333; /* Default text color */
+    overflow-x: hidden;
+}
+
+header {
+    position: relative;
+    height: 100vh; /* Full height for the header */
+    overflow: hidden; /* Hide overflow */
+}
+
+html {
+    scroll-behavior: smooth;
+}
+.company-title {
+    color: white;
+}
+
+.company-maintitle {
+    white-space:nowrap;
+    font-size: 27px;
+}
+.company-subtitle {
+    white-space:nowrap;
+    font-size: 1rem;
+}
+.navbar {
+    display: flex;
+    justify-content: space-between; /* Space between logo and call button */
+    align-items: center;
+    padding: 8px;
+    background-color: rgb(175 175 113 / 70%); /* Semi-transparent background */
+    position: absolute; /* Position absolute to overlay on video */
+    width: 100%; /* Full width */
+    z-index: 10; /* Ensure navbar is above the video */
+}
+
+.logo img {
+    height: 70px; /* Set a specific height for the logo */
+    width: auto; /* Maintain aspect ratio */
+    margin-right: 10px; /* Space between logo and company name */
+}
+
+/* Default navigation links (large screens) */
+.nav-links {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: inherit;
+    flex-grow: 1;
+    justify-content: right;
+    margin-right: 20px;
+    font-size: medium;
+}
+
+/* Hide the hamburger icon on large screens */
+.hamburger {
+    display: none;
+}
+
+.nav-links li {
+    margin-left: 20px; /* Space between links */
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s; /* Smooth transition for hover effect */
+    white-space: nowrap;
+}
+
+.nav-links a:hover {
+    color: #ffcc00; /* Change color on hover */
+}
+
+
+.call-us {
+    margin-left: auto; /* Push the call button to the right */
+}
+
+.call-button {
+    margin-right: 25px;
+    background-color: #ff7f00; /* Call button color */
+    color: white;
+    padding: 7px 15px;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+.call-button:hover {
+    background-color: #e64a19; /* Darker shade on hover */
+}
+
+
+.video-background {
+    position: absolute; /* Position absolute to fill the header */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1; /* Ensure video is below the navbar */
+}
+
+video {
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.overlay {
+    position: relative;
+    z-index: 2; /* Ensure overlay is above the video */
+    color: white;
+    text-align: center;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+
+.cta-button {
+    background-color: #ff7f00;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+}
+.cta-button:hover {
+    background-color: #e64a19; /* Darker shade on hover */
+}
+
+section {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+#about, #services {
+    background-color: rgba(255, 255, 255, 0.9); /* Light background for contrast */
+    padding: 50px 20px;
+    border-radius: 10px; /* Rounded corners */
+}
+
+#about h2, #services h2 {
+    margin-bottom: 20px;
+}
+
+#about p, #services p {
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.services-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.service {
+    text-align: center;
+    margin: 20px;
+    width: 250px; /* Fixed width for service boxes */
+}
+.services {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 30px;
+}
+
+.service img {
+    width: 200px;
+    height: 150px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+}
+
+
+.team-container, .projects-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.team-member, .project {
+    margin: 20px;
+    width: 200px; /* Fixed width for team members and projects */
+}
+
+.team-member img, .project img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+/* Footer */
+footer {
+    background: #333;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+}
+footer p {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+footer a {
+    color: #f39c12;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+
+/* Go to Top Button */
+.go-to-top {
+    position: fixed; /* Fixed position to stay in the same place on scroll */
+    bottom: 20px; /* Distance from the bottom of the viewport */
+    right: 20px; /* Distance from the right of the viewport */
+    background-color: #ff7f00; /* Button color */
+    color: white; /* Text color */
+    border: none; /* No border */
+    border-radius: 5px; /* Rounded corners */
+    padding: 10px 15px; /* Padding for the button */
+    font-size: 16px; /* Font size */
+    cursor: pointer; /* Pointer cursor on hover */
+    display: none; /* Initially hidden */
+    transition: background-color 0.3s, transform 0.3s; /* Smooth transition for hover effect */
+}
+
+.go-to-top:hover {
+    background-color: #e64a19; /* Darker shade on hover */
+    transform: scale(1.1); /* Slightly enlarge the button on hover */
+}
+
+#client-feedback {
+    background-color: rgba(255, 255, 255, 0.9); /* Light background for contrast */
+    text-align: center;
+    border-radius: 10px; /* Rounded corners */
+    margin: 20px 0; /* Space above and below the section */
+}
+
+#client-feedback h2 {
+    margin-bottom: 20px;
+}
+
+.carousel {
+    position: relative;
+    overflow: hidden; /* Hide overflow for carousel effect */
+}
+
+.carousel-container {
+    display: flex; /* Use flexbox for horizontal layout */
+    transition: transform 0.5s ease; /* Smooth transition for sliding effect */
+}
+
+.feedback-item {
+    min-width: 300px; /* Fixed width for feedback items */
+    margin: 0 10px; /* Space between items */
+    padding: 20px;
+    border: 1px solid #ddd; /* Light border */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.feedback-item p {
+    font-style: italic; /* Italicize the feedback text */
+}
+
+.feedback-item h4 {
+    margin-top: 10px; /* Space above the client name */
+    font-weight: normal; /* Normal weight for client name */
+}
+
+.carousel-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    z-index: 10; /* Ensure buttons are above the carousel */
+}
+
+.prev {
+    left: 10px; /* Position left button */
+}
+
+.next {
+    right: 10px; /* Position right button */
+}
+
+.solutions {
+    text-align: center;
+    padding: 50px 0;
+}
+h1 {
+    font-size: 3em;
+    margin-bottom: 10px;
+}
+
+.wave {
+    width: 100%;
+    height: 190px;
+    background-image: url("https://cloud-1de12d.b-cdn.net/media/iW=1170&iH=181&oX=0&oY=0&cW=1170&cH=145/d08-curve-line-img/image.png");
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    top: -40px;
+    filter: brightness(100%) hue-rotate(289deg) saturate(0%) contrast(100%);
+}
+.service-title {
+    white-space: nowrap;
+    font-weight: bold;
+}
+.service-description {
+    font-size: 0.9em;
+}
+
+/* Contact Form */
+.contact-section {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    flex-wrap: wrap; /* Ensure wrapping on smaller screens */
+    margin: 20px 0;
+}
+
+.contact-section .map {
+    flex: 1;
+    min-width: 300px;
+}
+
+.contact-section .form {
+    flex: 1;
+    min-width: 300px;
+}
+
+.contact-section iframe {
+    width: 100%; /* Ensure the map takes the full width of its container */
+    height: auto;
+    aspect-ratio: 16/9; /* Maintain aspect ratio for map */
+}
+
+.contact-section .form input, 
+.contact-section .form textarea {
+    width: 100%; /* Full width for inputs and textareas */
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.contact-section .form button {
+    padding: 10px 20px;
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%; /* Make the button full width for smaller screens */
+    transition: background-color 0.3s;
+}
+
+.contact-section .form button:hover {
+    background-color: #555; /* Darker shade on hover */
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .logo img {
+        height: 60px; /* Set a specific height for the logo */
+        width: auto; /* Maintain aspect ratio */
+        margin-right: 6px; /* Space between logo and company name */
+    }
+    .company-maintitle {
+        font-size: 24px;
+    }
+    .company-subtitle {
+        font-size: 14px;
+    }
+    .navbar {
+        position: relative;
+    }
+
+    .nav-links {
+        display: none; /* Hide navigation links by default */
+        flex-direction: column;
+        position: absolute;
+        top: 100%; /* Ensure nav-links appear just below the navbar */
+        left: 0;
+        width: 100%;
+        background-color: #3f4134de; /* Dark background */
+        z-index: 1;
+        margin: 0; /* Remove default margin */
+        padding: 0;
+    }
+
+    .nav-links.show {
+        display: flex; /* Show links when active */
+    }
+
+    .nav-links li {
+        width: 100%; /* Ensure links take up full width */
+        text-align: center; /* Center align text */
+        padding: 10px; /* Add padding for better spacing */
+        margin: 0;
+        border-bottom: 1px solid #ffffff38;
+    }
+
+    .hamburger {
+        display: block; /* Show hamburger icon on small screens */
+        font-size: 30px;
+        color: white;
+        cursor: pointer;
+        margin-right: 20px;
+    }
+    .contact-section {
+        flex-direction: column; /* Stack map and form vertically */
+    }
+
+    .contact-section .map, 
+    .contact-section .form {
+        flex: none; /* Reset flex properties */
+        width: 100%; /* Take up full width */
+    }
+
+    .contact-section iframe {
+        height: 250px; /* Adjust height for smaller screens */
+    }
+}
+
+/* Extra Small Screens (max-width: 480px) */
+ @media (max-width: 480px) {
+    .logo img {
+        height: 50px; /* Set a specific height for the logo */
+        width: auto; /* Maintain aspect ratio */
+        margin-right: 10px; /* Space between logo and company name */
+    }
+    h1, h2 {
+        font-size: 1.5rem;
+    }
+   .company-maintitle {
+        font-size: 18px;
+    }
+    .company-subtitle {
+        font-size: 11px;
+    }
+
+    .cta-button {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .call-button {
+        font-size: 14px;
+        padding: 8px 15px;
+    }
+
+    .go-to-top {
+        bottom: 15px;
+        right: 15px;
+        padding: 8px 10px;
+    }
+} 
+
