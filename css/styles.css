@@ -159,6 +159,30 @@ section {
     margin: 0 auto;
     line-height: 1.6;
 }
+.solutions {
+    text-align: center;
+    padding: 50px 0;
+}
+.solution-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    /* margin-top: 30px; */
+}
+.solution {
+    text-align: center;
+    margin: 20px;
+    width: 350px;
+}
+.solution img {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+}
+.solutions h1 {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
 
 .services-container {
     display: flex;
@@ -196,9 +220,16 @@ section {
     width: 200px; /* Fixed width for team members and projects */
 }
 
-.team-member img, .project img {
-    width: 100%;
-    border-radius: 10px;
+.team-member img {
+    width: 100px;
+    height: 100px;
+    border-radius: 25px;
+}
+
+.project img {
+    width: 200px;
+    height: 100px;
+    border-radius: 25px;
 }
 
 /* Footer */
@@ -304,14 +335,12 @@ footer a:hover {
     right: 10px; /* Position right button */
 }
 
-.solutions {
-    text-align: center;
-    padding: 50px 0;
-}
+
 h1 {
     font-size: 3em;
     margin-bottom: 10px;
 }
+
 
 .wave {
     width: 100%;
@@ -320,7 +349,7 @@ h1 {
     background-size: cover;
     background-position: center;
     position: relative;
-    top: -40px;
+    top: 4px;
     filter: brightness(100%) hue-rotate(289deg) saturate(0%) contrast(100%);
 }
 .service-title {
