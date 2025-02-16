@@ -1,3 +1,4 @@
+
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -154,7 +155,13 @@ section {
     margin-bottom: 20px;
 }
 
-#about p, #services p {
+#about p {
+    max-width: 1100px;
+    font-size: 21px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+#services p {
     max-width: 800px;
     margin: 0 auto;
     line-height: 1.6;
@@ -192,8 +199,8 @@ section {
 
 .service {
     text-align: center;
-    margin: 20px;
-    width: 250px; /* Fixed width for service boxes */
+    margin: 30px;
+    width: 350px; /* Fixed width for service boxes */
 }
 .services {
     display: flex;
@@ -202,12 +209,21 @@ section {
 }
 
 .service img {
-    width: 200px;
-    height: 150px;
+    width: 300px;
+    height: 200px;
     margin-bottom: 10px;
     border-radius: 10px;
 }
 
+.service h3, .team-member h3 {
+    margin-bottom: initial;
+    margin-top: initial;
+}
+
+.team-member p {
+    margin-bottom: initial;
+    margin-top: initial;
+}
 
 .team-container, .projects-container {
     display: flex;
@@ -215,20 +231,30 @@ section {
     flex-wrap: wrap;
 }
 
-.team-member, .project {
+.team-member {
     margin: 20px;
     width: 200px; /* Fixed width for team members and projects */
 }
 
 .team-member img {
+    width: 100%;
+    height: auto;
+    min-width: 150px;
+    /* border: 5px double gray; */
+    border-radius: 40%;
+}
+/* .team-member img {
     width: 100px;
     height: 100px;
     border-radius: 25px;
+} */
+.project {
+    margin: 20px;
+    width: 300px; 
 }
-
 .project img {
-    width: 200px;
-    height: 100px;
+    width: 300px;
+    height: 200px;
     border-radius: 25px;
 }
 
