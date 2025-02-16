@@ -523,7 +523,7 @@ h1 {
 
     .call-button {
         font-size: 14px;
-        padding: 8px 12px;
+        padding: 8px 10px;
         margin-right: 6px;
     }
 
@@ -533,11 +533,3 @@ h1 {
         padding: 8px 10px;
     }
 } 
-/* Extra Small Screens (max-width: 480px) */
-@media (max-width: 315px) {
-    .call-button {
-        font-size: 14px;
-        padding: 8px 10px;
-    }
-}
-
