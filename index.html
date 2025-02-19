@@ -79,22 +79,22 @@
         <h2>Our Services</h2>
         <div class="services-container">
             <div class="service">
-                <img src="assets/residential.jpg" alt="Service 1"> <!-- Replace with your service image -->
+                <img src="assets/residential.jpg" alt="Residential Construction"> <!-- Replace with your service image -->
                 <h3>Residential Construction</h3>
                 <p>We specialize in building beautiful and functional homes tailored to your needs.</p>
             </div>
             <div class="service">
-                <img src="assets/commercial.jpg" alt="Service 2"> <!-- Replace with your service image -->
+                <img src="assets/commercial.jpg" alt="Commercial Construction"> <!-- Replace with your service image -->
                 <h3>Commercial Construction</h3>
                 <p>Our team is experienced in constructing commercial spaces that enhance business operations.</p>
             </div>
             <div class="service">
-                <img src="assets/renovation.jpg" alt="Service 3"> <!-- Replace with your service image -->
+                <img src="assets/renovation.jpg" alt="Renovations"> <!-- Replace with your service image -->
                 <h3>Renovations</h3>
                 <p>Transform your existing space with our expert renovation services.</p>
             </div>
             <div class="service">
-                <img src="assets/project planning.jpg" alt="Service 4"> <!-- Replace with your service image -->
+                <img src="assets/project planning.jpg" alt="Project Management"> <!-- Replace with your service image -->
                 <h3>Project Management</h3>
                 <p>We provide comprehensive project management services to ensure timely and on-budget delivery.</p>
             </div>
@@ -106,33 +106,33 @@
         <h2>Meet Our Team</h2>
         <div class="team-container">
             <div class="team-member">
-                <img src="assets/nishant.jpg" alt="Team Member 1">
+                <img src="assets/nishant.jpg" alt="Nishant Bajracharya">
                 <h3>Nishant Bajracharya</h3>
                 <p>Managing Director</p>
                 <p>Computer Engineer</p>
             </div>
             <div class="team-member">
-                <img src="assets/sudarsana.jpg" alt="Team Member 2">
+                <img src="assets/sudarsana.jpg" alt="Sudarsana Shakya">
                 <h3>Sudarsana Shakya</h3>
                 <p>Chief Engineer</p>
             </div>
             <div class="team-member">
-                <img src="assets/pragya.jpg" alt="Team Member 3">
+                <img src="assets/pragya.jpg" alt="Pragya Shakya">
                 <h3>Pragya Shakya</h3>
                 <p>Chartered Accountant</p>
             </div>
             <div class="team-member">
-                <img src="assets/sarjina.jpg" alt="Team Member 3">
+                <img src="assets/sarjina.jpg" alt="Sarjina Shrestha">
                 <h3>Sarjina Shrestha</h3>
                 <p>Intern Civil Engineer</p>
             </div>
             <div class="team-member">
-                <img src="assets/nischal.jpg" alt="Team Member 3">
+                <img src="assets/nischal.jpg" alt="Nishant Chandra Shah">
                 <h3>Nishant Chandra Shah</h3>
                 <p>Intern Civil Engineer</p>
             </div>
             <div class="team-member">
-                <img src="assets/kabita.jpg" alt="Team Member 3">
+                <img src="assets/kabita.jpg" alt="Kabita Lama">
                 <h3>Kabita Lama</h3>
                 <p>Intern Civil Engineer</p>
             </div>
@@ -144,17 +144,17 @@
         <h2>Our Completed Projects</h2>
         <div class="projects-container">
             <div class="project">
-                <img src="assets/dharmodaya.jpg" alt="Project 1">
+                <img src="assets/dharmodaya.jpg" alt="Dharmodaya Bihar">
                 <h3>Dharmodaya Bihar</h3>
                 <p>Location: Balkumari, Lalitpur</p>
             </div>
             <div class="project">
-                <img src="assets/khokana.jpg" alt="Project 2">
+                <img src="assets/khokana.jpg" alt="Khokana Residential">
                 <h3>Khokana Residential</h3>
                 <p>Location: Khokana, Chovar</p>
             </div>
             <div class="project">
-                <img src="assets/chitwan.jpg" alt="Project 3">
+                <img src="assets/chitwan.jpg" alt="Chitwan Canteen Block">
                 <h3>Chitwan Canteen Block</h3>
                 <p>Location: Bottle's Nepal, Bharatpur, Chitwan</p>
             </div>
@@ -182,11 +182,12 @@
                 </div>
                 <div class="form">
                     <h3>Get in Touch</h3>
-                    <form action="#" method="POST">
+                    <form id="contactForm">
                         <input type="text" name="name" placeholder="Your Name" required>
                         <input type="email" name="email" placeholder="Your Email" required>
-                        <textarea name="message" placeholder="Your Message" required></textarea>
-                        <button type="submit">Submit</button>
+                        <input type="phone" name="phone" placeholder="Your Phone +977-98XX-XXXXXX" required>
+                        <textarea name="message"  placeholder="Your Message" required></textarea>
+                        <button type="submit">Send Message</button>
                     </form>
                 </div>
             </div>
@@ -198,87 +199,16 @@
         <p>Email: <a href="mailto:jeiwservices@gmail.com">jeiwservices@gmail.com</a></p>
         <p>Phone: <a href="tel:+9779841618841">+977-9841618841</a></p>
     </footer>
-    <button id="goToTop" class="go-to-top">↑ Go to Top</button>
-   
-<script>
-      // Get the hamburger icon and navigation links
-    const hamburger = document.getElementById('hamburger');
-    const navLinks = document.getElementById('nav-links');
-
-    // Toggle the 'active' class on the nav-links when the hamburger is clicked
-    hamburger.addEventListener('click', () => {
-        navLinks.classList.toggle('show');
-        hamburger.innerHTML = navLinks.classList.contains('show') ? '&#10006;' : '&#9776;';
-        navLinks.classList.toggle('active');
-    });
-    // hamburger.addEventListener('click', () => {
-    //     navLinks.classList.toggle('active');
-    // });
-
-    // Ensure nav-links are visible on larger screens and not toggled accidentally
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 768) {
-            navLinks.classList.remove('active'); // Reset to default state
-        }
-    });
-    
-    // JavaScript for "Go to Top" button
-    const goToTopButton = document.getElementById('goToTop');
-
-    // Show the button when the user scrolls down 100px from the top of the document
-    window.onscroll = function() {
-        if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
-            goToTopButton.style.display = "block";
-        } else {
-            goToTopButton.style.display = "none";
-        }
-    };
-
-    // When the user clicks on the button, scroll to the top of the document
-    goToTopButton.addEventListener('click', function() {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-</script>
-
-<script>
-    const carouselContainer = document.querySelector('.carousel-container');
-    const feedbackItems = document.querySelectorAll('.feedback-item');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-
-    let currentIndex = 0;
-
-    function updateCarousel() {
-        const itemWidth = feedbackItems[0].clientWidth; // Get the width of a feedback item
-        const offset = -currentIndex * itemWidth; // Calculate the offset
-        carouselContainer.style.transform = `translateX(${offset}px)`; // Move the carousel
-    }
-
-    nextBtn.addEventListener('click', () => {
-        if (currentIndex < feedbackItems.length - 1) {
-            currentIndex++;
-        } else {
-            currentIndex = 0; // Loop back to the first item
-        }
-        updateCarousel();
-    });
-
-    prevBtn.addEventListener('click', () => {
-        if (currentIndex > 0) {
-            currentIndex--;
-        } else {
-            currentIndex = feedbackItems.length - 1; // Loop back to the last item
-        }
-        updateCarousel();
-    });
-
-    // Optional: Auto-slide functionality
-    setInterval(() => {
-        nextBtn.click();
-    }, 5000); // Change slide every 5 seconds
-</script>
-    
-   
-
+    <button id="goToTop" class="go-to-top">↑</button>
+    <!-- Popup -->
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closePopup()">&times;</span>
+            <p>Thank you for contacting us! We will get back to you soon.</p>
+            <p>Need urgent help? Call us now:</p>
+            <a href="tel:+977-9841618841" class="popup-call-btn">Call Now: 9841618841</a>
+        </div>
+    </div>
+    <script src="js/script.js"></script>
 </body>
 </html>
