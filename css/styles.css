@@ -6,7 +6,25 @@ body {
     color: #333; /* Default text color */
     overflow-x: hidden;
 }
-
+/* Initially Hide Content */
+#content {
+    display: none;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+/* Full-Screen Loader */
+#loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgb(255, 254, 254);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
 header {
     position: relative;
     height: 100vh; /* Full height for the header */
@@ -33,7 +51,8 @@ html {
     justify-content: space-between; /* Space between logo and call button */
     align-items: center;
     padding: 8px;
-    background-color :rgba(0,0,0,.45);
+    background-image: linear-gradient(93deg, #9b8d8d, #00000000);
+    /* background-color :rgba(0,0,0,.45); */
     /* background-color: rgb(175 175 113 / 70%); Semi-transparent background */
     position: absolute; /* Position absolute to overlay on video */
     width: 100%; /* Full width */

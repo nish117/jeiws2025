@@ -8,205 +8,211 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <header>
-        <nav class="navbar">
-            <div class="logo">
-                <img src="assets/logo.png" alt="Company Logo"> 
-            </div>
-            <div class="company-title">
-                <span class="company-maintitle"><Strong>J.E. Infrastructrure</Strong></span>
-                <br> <span class="company-subtitle">Waterproofing & Services Pvt. Ltd.</span> 
-            </div>
+      <!-- Loader (Shows Until Page is Fully Loaded) -->
+    <div id="loader">
+        <img src="assets/preloader.gif" alt="Loading...">
+    </div>
+    <div id="content">
+        <header>
+            <nav class="navbar">
+                <div class="logo">
+                    <img src="assets/logo.png" alt="Company Logo"> 
+                </div>
+                <div class="company-title">
+                    <span class="company-maintitle"><Strong>J.E. Infrastructrure</Strong></span>
+                    <br> <span class="company-subtitle">Waterproofing & Services Pvt. Ltd.</span> 
+                </div>
+                
             
-           
-            <ul class="nav-links" id="nav-links">
-                <li><a href="#about">About Us</a></li>
-                <li><a href="#team">Our Team</a></li>
-                <li><a href="#projects">Our Projects</a></li>
-                <li><a href="#services">Our Services</a></li>
-                <li><a href="#contact">Contact Us</a></li>
-            </ul>
-            <div class="call-us">
-                <a href="tel:+977-9841618841" class="call-button">Call Now</a> <!-- Replace with your phone number -->
-            </div>
-             <div class="hamburger" id="hamburger">
-                &#9776; <!-- Hamburger icon -->
-            </div>
-        </nav>
-        <div class="video-background">
-            <video id="bg-video" autoplay muted loop>
-                <!-- <source src="assets/your-video.mp4" type="video/mp4"> -->
-                Your browser does not support the video tag.
-            </video>
-            <div class="overlay">
-                <h1>Welcome to JEIWS</h1>
-                <p>Building Your Dreams into Reality</p>
-                <a href="#projects" class="cta-button">View Our Projects</a>
-            </div>
-        </div>
-    </header>
-
-    <section id="about">
-        <h2>About Us</h2>
-        <p>At <strong>J.E. Infrastructrure Waterproofing & Services Pvt. Ltd.,</strong> we are dedicated to providing top-notch construction services that meet the highest standards of quality and safety. With years of experience in the industry, our team of skilled professionals is committed to turning your vision into reality. Whether it's residential, commercial, or industrial projects, we have the expertise to handle it all. Our mission is to build lasting relationships with our clients through transparency, integrity, and exceptional service.</p>
-    </section>
-    <section class="solutions">
-        <h1>Reliable Solutions for Construction Excellence</h1>
-        <p>Experience Excellence in Construction with Dependable Solutions from JEIWS</p>
-        <div class="solution-container">
-            <div class="solution">
-                <img src="assets/engineer.gif" alt="Construction Icon">
-                <div class="service-title">Project Management</div>
-                <div class="service-description">Efficiently manage your construction projects.</div>
-            </div>
-            <div class="solution">
-                <img src="assets/architecture.gif" alt="Architecture Icon">
-                <div class="service-title">Architectural Design</div>
-                <div class="service-description">Innovative designs tailored to your needs.</div>
-            </div>
-            <div class="solution">
-                <img src="assets/solution.gif" alt="Engineering Icon">
-                <div class="service-title">Engineering Solutions</div>
-                <div class="service-description">Expert engineering services for your projects.</div>
-            </div>
-        </div>
-        <div class="wave">
-            <!-- <img src="assets/wave.png" alt="Wave"> -->
-        </div>
-    </section>
-
-    <section id="services">
-        <h2>Our Services</h2>
-        <div class="services-container">
-            <div class="service">
-                <img src="assets/residential.jpg" alt="Residential Construction"> <!-- Replace with your service image -->
-                <h3>Residential Construction</h3>
-                <p>We specialize in building beautiful and functional homes tailored to your needs.</p>
-            </div>
-            <div class="service">
-                <img src="assets/commercial.jpg" alt="Commercial Construction"> <!-- Replace with your service image -->
-                <h3>Commercial Construction</h3>
-                <p>Our team is experienced in constructing commercial spaces that enhance business operations.</p>
-            </div>
-            <div class="service">
-                <img src="assets/renovation.jpg" alt="Renovations"> <!-- Replace with your service image -->
-                <h3>Renovations</h3>
-                <p>Transform your existing space with our expert renovation services.</p>
-            </div>
-            <div class="service">
-                <img src="assets/project planning.jpg" alt="Project Management"> <!-- Replace with your service image -->
-                <h3>Project Management</h3>
-                <p>We provide comprehensive project management services to ensure timely and on-budget delivery.</p>
-            </div>
-        </div>
-    </section>
-
-
-    <section id="team">
-        <h2>Meet Our Team</h2>
-        <div class="team-container">
-            <div class="team-member">
-                <img src="assets/nishant.jpg" alt="Nishant Bajracharya">
-                <h3>Nishant Bajracharya</h3>
-                <p>Managing Director</p>
-                <p>Computer Engineer</p>
-            </div>
-            <div class="team-member">
-                <img src="assets/sudarsana.jpg" alt="Sudarsana Shakya">
-                <h3>Sudarsana Shakya</h3>
-                <p>Chief Engineer</p>
-            </div>
-            <div class="team-member">
-                <img src="assets/pragya.jpg" alt="Pragya Shakya">
-                <h3>Pragya Shakya</h3>
-                <p>Chartered Accountant</p>
-            </div>
-            <div class="team-member">
-                <img src="assets/sarjina.jpg" alt="Sarjina Shrestha">
-                <h3>Sarjina Shrestha</h3>
-                <p>Intern Civil Engineer</p>
-            </div>
-            <div class="team-member">
-                <img src="assets/nischal.jpg" alt="Nishant Chandra Shah">
-                <h3>Nishant Chandra Shah</h3>
-                <p>Intern Civil Engineer</p>
-            </div>
-            <div class="team-member">
-                <img src="assets/kabita.jpg" alt="Kabita Lama">
-                <h3>Kabita Lama</h3>
-                <p>Intern Civil Engineer</p>
-            </div>
-            <!-- Add more team members as needed -->
-        </div>
-    </section>
-
-    <section id="projects">
-        <h2>Our Completed Projects</h2>
-        <div class="projects-container">
-            <div class="project">
-                <img src="assets/dharmodaya.jpg" alt="Dharmodaya Bihar">
-                <h3>Dharmodaya Bihar</h3>
-                <p>Location: Balkumari, Lalitpur</p>
-            </div>
-            <div class="project">
-                <img src="assets/khokana.jpg" alt="Khokana Residential">
-                <h3>Khokana Residential</h3>
-                <p>Location: Khokana, Chovar</p>
-            </div>
-            <div class="project">
-                <img src="assets/chitwan.jpg" alt="Chitwan Canteen Block">
-                <h3>Chitwan Canteen Block</h3>
-                <p>Location: Bottle's Nepal, Bharatpur, Chitwan</p>
-            </div>
-            <!-- Add more projects as needed -->
-        </div>
-    </section>
-
-    
-    <!-- Contact Us Section -->
-    <section id="contact">
-        <div class="container">
-            <h2>Contact Us</h2>
-            <div class="contact-section">
-                <div class="map">
-                    <h3>Our Location</h3>
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.8258920105104!2d85.304307!3d27.691775599999996!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb198ebac532d7%3A0x690ae98a4106782!2sJ.E.%20Infrastructure%20Waterproofing%20And%20Services%20Pvt.%20Ltd.!5e0!3m2!1sen!2snp!4v1736490068524!5m2!1sen!2snp" 
-                        width="600" 
-                        height="450" 
-                        style="border:0;" 
-                        allowfullscreen="" 
-                        loading="lazy" 
-                        referrerpolicy="no-referrer-when-downgrade">
-                    </iframe>
-                    <!-- <iframe src="https://www.google.com/maps/embed?pb=YOUR_MAP_URL" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe> -->
+                <ul class="nav-links" id="nav-links">
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#team">Our Team</a></li>
+                    <li><a href="#projects">Our Projects</a></li>
+                    <li><a href="#services">Our Services</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                </ul>
+                <div class="call-us">
+                    <a href="tel:+977-9841618841" class="call-button">Call Now</a> <!-- Replace with your phone number -->
                 </div>
-                <div class="form">
-                    <h3>Get in Touch</h3>
-                    <form id="contactForm">
-                        <input type="text" name="name" placeholder="Your Name" required>
-                        <input type="email" name="email" placeholder="Your Email" required>
-                        <input type="tel" id="phone" name="phone" required pattern="[0-9]{10}" placeholder="Enter 10-digit phone number">
-                        <textarea name="message"  placeholder="Your Message" required></textarea>
-                        <button type="submit">Send Message</button>
-                    </form>
+                <div class="hamburger" id="hamburger">
+                    &#9776; <!-- Hamburger icon -->
+                </div>
+            </nav>
+            <div class="video-background">
+                <video id="bg-video" autoplay muted loop>
+                    <!-- <source src="assets/your-video.mp4" type="video/mp4"> -->
+                    Your browser does not support the video tag.
+                </video>
+                <div class="overlay">
+                    <h1>Welcome to JEIWS</h1>
+                    <p>Building Your Dreams into Reality</p>
+                    <a href="#projects" class="cta-button">View Our Projects</a>
                 </div>
             </div>
-        </div>
-    </section>
-    <footer>
-        <p>&copy; 2025 J.E. Infrastructure Waterproofing & Services Pvt. Ltd. All rights reserved.</p>
-        <p>Address: Sanepa, Lalitpur</p>
-        <p>Email: <a href="mailto:jeiwservices@gmail.com">jeiwservices@gmail.com</a></p>
-        <p>Phone: <a href="tel:+9779841618841">+977-9841618841</a></p>
-    </footer>
-    <button id="goToTop" class="go-to-top">↑</button>
-    <!-- Popup -->
-    <div id="popup" class="popup">
-        <div class="popup-content">
-            <span class="close-btn" onclick="closePopup()">&times;</span>
-            <p>Thank you for contacting us! We will get back to you soon.</p>
-            <p>Need urgent help? Call us now:</p>
-            <a href="tel:+977-9841618841" class="popup-call-btn">Call Now: 9841618841</a>
+        </header>
+
+        <section id="about">
+            <h2>About Us</h2>
+            <p>At <strong>J.E. Infrastructrure Waterproofing & Services Pvt. Ltd.,</strong> we are dedicated to providing top-notch construction services that meet the highest standards of quality and safety. With years of experience in the industry, our team of skilled professionals is committed to turning your vision into reality. Whether it's residential, commercial, or industrial projects, we have the expertise to handle it all. Our mission is to build lasting relationships with our clients through transparency, integrity, and exceptional service.</p>
+        </section>
+        <section class="solutions">
+            <h1>Reliable Solutions for Construction Excellence</h1>
+            <p>Experience Excellence in Construction with Dependable Solutions from JEIWS</p>
+            <div class="solution-container">
+                <div class="solution">
+                    <img src="assets/engineer.gif" alt="Construction Icon">
+                    <div class="service-title">Project Management</div>
+                    <div class="service-description">Efficiently manage your construction projects.</div>
+                </div>
+                <div class="solution">
+                    <img src="assets/architecture.gif" alt="Architecture Icon">
+                    <div class="service-title">Architectural Design</div>
+                    <div class="service-description">Innovative designs tailored to your needs.</div>
+                </div>
+                <div class="solution">
+                    <img src="assets/solution.gif" alt="Engineering Icon">
+                    <div class="service-title">Engineering Solutions</div>
+                    <div class="service-description">Expert engineering services for your projects.</div>
+                </div>
+            </div>
+            <div class="wave">
+                <!-- <img src="assets/wave.png" alt="Wave"> -->
+            </div>
+        </section>
+
+        <section id="services">
+            <h2>Our Services</h2>
+            <div class="services-container">
+                <div class="service">
+                    <img src="assets/residential.jpg" alt="Residential Construction"> <!-- Replace with your service image -->
+                    <h3>Residential Construction</h3>
+                    <p>We specialize in building beautiful and functional homes tailored to your needs.</p>
+                </div>
+                <div class="service">
+                    <img src="assets/commercial.jpg" alt="Commercial Construction"> <!-- Replace with your service image -->
+                    <h3>Commercial Construction</h3>
+                    <p>Our team is experienced in constructing commercial spaces that enhance business operations.</p>
+                </div>
+                <div class="service">
+                    <img src="assets/renovation.jpg" alt="Renovations"> <!-- Replace with your service image -->
+                    <h3>Renovations</h3>
+                    <p>Transform your existing space with our expert renovation services.</p>
+                </div>
+                <div class="service">
+                    <img src="assets/project planning.jpg" alt="Project Management"> <!-- Replace with your service image -->
+                    <h3>Project Management</h3>
+                    <p>We provide comprehensive project management services to ensure timely and on-budget delivery.</p>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="team">
+            <h2>Meet Our Team</h2>
+            <div class="team-container">
+                <div class="team-member">
+                    <img src="assets/nishant.jpg" alt="Nishant Bajracharya">
+                    <h3>Nishant Bajracharya</h3>
+                    <p>Managing Director</p>
+                    <p>Computer Engineer</p>
+                </div>
+                <div class="team-member">
+                    <img src="assets/sudarsana.jpg" alt="Sudarsana Shakya">
+                    <h3>Sudarsana Shakya</h3>
+                    <p>Chief Engineer</p>
+                </div>
+                <div class="team-member">
+                    <img src="assets/pragya.jpg" alt="Pragya Shakya">
+                    <h3>Pragya Shakya</h3>
+                    <p>Chartered Accountant</p>
+                </div>
+                <div class="team-member">
+                    <img src="assets/sarjina.jpg" alt="Sarjina Shrestha">
+                    <h3>Sarjina Shrestha</h3>
+                    <p>Intern Civil Engineer</p>
+                </div>
+                <div class="team-member">
+                    <img src="assets/nischal.jpg" alt="Nishant Chandra Shah">
+                    <h3>Nishant Chandra Shah</h3>
+                    <p>Intern Civil Engineer</p>
+                </div>
+                <div class="team-member">
+                    <img src="assets/kabita.jpg" alt="Kabita Lama">
+                    <h3>Kabita Lama</h3>
+                    <p>Intern Civil Engineer</p>
+                </div>
+                <!-- Add more team members as needed -->
+            </div>
+        </section>
+
+        <section id="projects">
+            <h2>Our Completed Projects</h2>
+            <div class="projects-container">
+                <div class="project">
+                    <img src="assets/dharmodaya.jpg" alt="Dharmodaya Bihar">
+                    <h3>Dharmodaya Bihar</h3>
+                    <p>Location: Balkumari, Lalitpur</p>
+                </div>
+                <div class="project">
+                    <img src="assets/khokana.jpg" alt="Khokana Residential">
+                    <h3>Khokana Residential</h3>
+                    <p>Location: Khokana, Chovar</p>
+                </div>
+                <div class="project">
+                    <img src="assets/chitwan.jpg" alt="Chitwan Canteen Block">
+                    <h3>Chitwan Canteen Block</h3>
+                    <p>Location: Bottle's Nepal, Bharatpur, Chitwan</p>
+                </div>
+                <!-- Add more projects as needed -->
+            </div>
+        </section>
+
+        
+        <!-- Contact Us Section -->
+        <section id="contact">
+            <div class="container">
+                <h2>Contact Us</h2>
+                <div class="contact-section">
+                    <div class="map">
+                        <h3>Our Location</h3>
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.8258920105104!2d85.304307!3d27.691775599999996!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb198ebac532d7%3A0x690ae98a4106782!2sJ.E.%20Infrastructure%20Waterproofing%20And%20Services%20Pvt.%20Ltd.!5e0!3m2!1sen!2snp!4v1736490068524!5m2!1sen!2snp" 
+                            width="600" 
+                            height="450" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy" 
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                        <!-- <iframe src="https://www.google.com/maps/embed?pb=YOUR_MAP_URL" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe> -->
+                    </div>
+                    <div class="form">
+                        <h3>Get in Touch</h3>
+                        <form id="contactForm">
+                            <input type="text" name="name" placeholder="Your Name" required>
+                            <input type="email" name="email" placeholder="Your Email" required>
+                            <input type="tel" id="phone" name="phone" required pattern="[0-9]{10}" placeholder="Enter 10-digit phone number">
+                            <textarea name="message"  placeholder="Your Message" required></textarea>
+                            <button type="submit">Send Message</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <footer>
+            <p>&copy; 2025 J.E. Infrastructure Waterproofing & Services Pvt. Ltd. All rights reserved.</p>
+            <p>Address: Sanepa, Lalitpur</p>
+            <p>Email: <a href="mailto:jeiwservices@gmail.com">jeiwservices@gmail.com</a></p>
+            <p>Phone: <a href="tel:+9779841618841">+977-9841618841</a></p>
+        </footer>
+        <button id="goToTop" class="go-to-top">↑</button>
+        <!-- Popup -->
+        <div id="popup" class="popup">
+            <div class="popup-content">
+                <span class="close-btn" onclick="closePopup()">&times;</span>
+                <p>Thank you for contacting us! We will get back to you soon.</p>
+                <p>Need urgent help? Call us now:</p>
+                <a href="tel:+977-9841618841" class="popup-call-btn">Call Now: 9841618841</a>
+            </div>
         </div>
     </div>
     <script src="js/script.js"></script>

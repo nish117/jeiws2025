@@ -8,10 +8,6 @@
       hamburger.innerHTML = navLinks.classList.contains('show') ? '&#10006;' : '&#9776;';
       navLinks.classList.toggle('active');
   });
-  // hamburger.addEventListener('click', () => {
-  //     navLinks.classList.toggle('active');
-  // });
-
   // Ensure nav-links are visible on larger screens and not toggled accidentally
   window.addEventListener('resize', () => {
       if (window.innerWidth > 768) {
@@ -49,30 +45,6 @@
       carouselContainer.style.transform = `translateX(${offset}px)`; // Move the carousel
   }
 
-//   nextBtn.addEventListener('click', () => {
-//       if (currentIndex < feedbackItems.length - 1) {
-//           currentIndex++;
-//       } else {
-//           currentIndex = 0; // Loop back to the first item
-//       }
-//       updateCarousel();
-//   });
-
-//   prevBtn.addEventListener('click', () => {
-//       if (currentIndex > 0) {
-//           currentIndex--;
-//       } else {
-//           currentIndex = feedbackItems.length - 1; // Loop back to the last item
-//       }
-//       updateCarousel();
-//   });
-
-//   // Optional: Auto-slide functionality
-//   setInterval(() => {
-//       nextBtn.click();
-//   }, 5000); // Change slide every 5 seconds
-
-
   document.getElementById("contactForm").addEventListener("submit", function(event) {
     event.preventDefault(); // Prevent default form submission
     let formData = new FormData(this);
@@ -105,7 +77,6 @@ const videos = [
     "assets/videos/your-video2.mp4",
     "assets/videos/your-video3.mp4",
     "assets/videos/your-video4.mp4",
-    "assets/videos/your-video5.mp4"
 ];
 
 // Select a random video
@@ -113,3 +84,15 @@ const randomVideo = videos[Math.floor(Math.random() * videos.length)];
 
 // Set the video source
 document.getElementById("bg-video").src = randomVideo;
+
+// Show loader until the entire document (including images, videos, etc.) is fully loaded
+window.onload = function () {
+    setTimeout(() => {
+        document.getElementById("loader").style.display = "none"; // Hide loader
+        let content = document.getElementById("content");
+        content.style.display = "block"; // Show content
+        setTimeout(() => {
+            content.style.opacity = "1"; // Fade-in effect
+        }, 200); 
+    }, 2000); // Ensure loader is visible for at least 2 seconds
+};
