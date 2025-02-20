@@ -94,5 +94,5 @@ window.onload = function () {
         setTimeout(() => {
             content.style.opacity = "1"; // Fade-in effect
         }, 200); 
-    }, 2000); // Ensure loader is visible for at least 2 seconds
+    }, 1100); // Ensure loader is visible for at least 2 seconds
 };
