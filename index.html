@@ -34,8 +34,8 @@
             </div>
         </nav>
         <div class="video-background">
-            <video autoplay muted loop>
-                <source src="assets/your-video.mp4" type="video/mp4">
+            <video id="bg-video" autoplay muted loop>
+                <!-- <source src="assets/your-video.mp4" type="video/mp4"> -->
                 Your browser does not support the video tag.
             </video>
             <div class="overlay">
@@ -185,7 +185,7 @@
                     <form id="contactForm">
                         <input type="text" name="name" placeholder="Your Name" required>
                         <input type="email" name="email" placeholder="Your Email" required>
-                        <input type="phone" name="phone" placeholder="Your Phone +977-98XX-XXXXXX" required>
+                        <input type="tel" id="phone" name="phone" required pattern="[0-9]{10}" placeholder="Enter 10-digit phone number">
                         <textarea name="message"  placeholder="Your Message" required></textarea>
                         <button type="submit">Send Message</button>
                     </form>

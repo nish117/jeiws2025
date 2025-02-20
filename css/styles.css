@@ -22,18 +22,19 @@ html {
 
 .company-maintitle {
     white-space:nowrap;
-    font-size: 27px;
+    font-size: 35px;
 }
 .company-subtitle {
     white-space:nowrap;
-    font-size: 1rem;
+    font-size: 1.3rem;
 }
 .navbar {
     display: flex;
     justify-content: space-between; /* Space between logo and call button */
     align-items: center;
     padding: 8px;
-    background-color: rgb(175 175 113 / 70%); /* Semi-transparent background */
+    background-color :rgba(0,0,0,.45);
+    /* background-color: rgb(175 175 113 / 70%); Semi-transparent background */
     position: absolute; /* Position absolute to overlay on video */
     width: 100%; /* Full width */
     z-index: 10; /* Ensure navbar is above the video */
@@ -84,6 +85,7 @@ html {
 }
 
 .call-button {
+    white-space: nowrap;
     margin-right: 25px;
     background-color: #ff7f00; /* Call button color */
     color: white;
@@ -461,7 +463,7 @@ h1 {
 }
 .popup-call-btn {
     display: inline-block;
-    background: #007bff;
+    background-color: #ff7f00;
     color: white;
     padding: 10px;
     text-decoration: none;
@@ -469,7 +471,7 @@ h1 {
 }
 
 .popup-call-btn:hover {
-    background: #0056b3;
+    background-color: #e64a19;
 }
 /* Responsive styles */
 @media (max-width: 768px) {

@@ -75,7 +75,6 @@
 
   document.getElementById("contactForm").addEventListener("submit", function(event) {
     event.preventDefault(); // Prevent default form submission
-debugger;
     let formData = new FormData(this);
 
     fetch("send_email.php", {
@@ -98,3 +97,19 @@ debugger;
 function closePopup() {
     document.getElementById("popup").style.display = "none";
 }
+
+
+// Array of video sources
+const videos = [
+    "assets/videos/your-video1.mp4",
+    "assets/videos/your-video2.mp4",
+    "assets/videos/your-video3.mp4",
+    "assets/videos/your-video4.mp4",
+    "assets/videos/your-video5.mp4"
+];
+
+// Select a random video
+const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+
+// Set the video source
+document.getElementById("bg-video").src = randomVideo;
