@@ -32,19 +32,6 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  const carouselContainer = document.querySelector('.carousel-container');
-  const feedbackItems = document.querySelectorAll('.feedback-item');
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-
-  let currentIndex = 0;
-
-  function updateCarousel() {
-      const itemWidth = feedbackItems[0].clientWidth; // Get the width of a feedback item
-      const offset = -currentIndex * itemWidth; // Calculate the offset
-      carouselContainer.style.transform = `translateX(${offset}px)`; // Move the carousel
-  }
-
   document.getElementById("contactForm").addEventListener("submit", function(event) {
     event.preventDefault(); // Prevent default form submission
     let formData = new FormData(this);
@@ -93,6 +80,11 @@ window.onload = function () {
         content.style.display = "block"; // Show content
         setTimeout(() => {
             content.style.opacity = "1"; // Fade-in effect
+            var jsRef = document.createElement("script");
+            jsRef.setAttribute("src", "js/main.js");
+            jsRef.setAttribute("type", "module");
+            document.getElementsByTagName("head")[0].appendChild(jsRef);
         }, 200); 
     }, 1100); // Ensure loader is visible for at least 2 seconds
 };
+
