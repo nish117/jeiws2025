@@ -12,22 +12,23 @@ body {
     opacity: 0;
     transition: opacity 1s ease-in-out;
 }
-/* Full-Screen Loader */
-#loader {
+/* Preloader styles */
+#preloader {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgb(255, 254, 254);
+    background: white;
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    transition: opacity 0.5s;
 }
 header {
     position: relative;
-    height: 100vh; /* Full height for the header */
+    /* height: 100vh; Full height for the header */
     overflow: hidden; /* Hide overflow */
 }
 
@@ -167,7 +168,9 @@ section {
     padding-left: 20px;
     text-align: center;
 }
-
+#about {
+    margin-top: 105vh;
+}
 #about, #services {
     /* background-color: rgba(255, 255, 255, 0.9); Light background for contrast */
     border-radius: 10px; /* Rounded corners */
@@ -575,6 +578,7 @@ h1 {
     text-align: center;
     color: #333;
     margin-bottom: 2rem;
+    margin-top: 130px;
 }
 
 .gallery { 
