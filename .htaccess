@@ -1,3 +1,0 @@
-Options +FollowSymlinks
-RewriteEngine on
-RewriteRule /post.php?postId=(.*) /post/$1 [NC]
