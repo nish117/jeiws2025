@@ -9,10 +9,12 @@ export function initializeHeader() {
                         <img src="assets/logo.png" alt="Company Logo"> 
                     </div>
                 </a>
-                <div class="company-title">
-                    <span class="company-maintitle"><Strong>J.E. Infrastructrure</Strong></span>
-                    <br> <span class="company-subtitle">Waterproofing & Services Pvt. Ltd.</span> 
-                </div>
+                <a id="anchor-no-underline" href="/">
+                    <div class="company-title">
+                        <span class="company-maintitle"><Strong>J.E. Infrastructrure</Strong></span>
+                        <br> <span class="company-subtitle">Waterproofing & Services Pvt. Ltd.</span> 
+                    </div>
+                </a>
                 <ul class="nav-links" id="nav-links">
                     <li><a href="${isGalleryPage ? './#about' : '#about'}" class="nav-link">About Us</a></li>
                     <li><a href="${isGalleryPage ? './#team' : '#team'}" class="nav-link">Our Team</a></li>
