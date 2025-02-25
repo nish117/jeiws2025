@@ -9,7 +9,7 @@ const project = projects.find(p => p.id === projectId);
 
 if (project) {
     // Set the page title
-    document.title = `${project.title} Gallery - BuildMaster Construction`;
+    document.title = `JEIWS-${project.title} Gallery`;
     
     // Set the gallery title
     document.getElementById('gallery-title').textContent = `${project.title} Gallery`;

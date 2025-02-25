@@ -4,9 +4,11 @@ export function initializeHeader() {
     header.innerHTML = `
         <header class"site-header>
             <nav class="navbar">
-                <div class="logo">
-                    <img src="assets/logo.png" alt="Company Logo"> 
-                </div>
+                <a href="/">
+                    <div class="logo">
+                        <img src="assets/logo.png" alt="Company Logo"> 
+                    </div>
+                </a>
                 <div class="company-title">
                     <span class="company-maintitle"><Strong>J.E. Infrastructrure</Strong></span>
                     <br> <span class="company-subtitle">Waterproofing & Services Pvt. Ltd.</span> 
