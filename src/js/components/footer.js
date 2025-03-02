@@ -21,7 +21,7 @@ export function initializeFooter() {
                 <p>&copy; 2025 J.E. Infrastructure Waterproofing & Services Pvt. Ltd. All rights reserved.</p>
                 <p>Sanepa, Lalitpur, Nepal </p>
                 <p>Email: <a href="mailto:jeiwservices@gmail.com">jeiwservices@gmail.com</a></p>
-                <p>Phone: <a href="tel:+9779841618841">+977-9841618841</a></p>
+                <p>Phone: <a href="tel:+977-9811334479">+977-9811334479</a></p>
             </div>
         </footer>
     `;
