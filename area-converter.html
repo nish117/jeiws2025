@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEIWS-Area Converter</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/area-converter.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="preloader"></div>
+    <div id="header"></div>
+    <div class="area-container">
+        <h2>Area Converter</h2>
+        <div class="system-container">
+            <h3>Ropani System</h3>
+            <div class="input-group">
+                <div class="input-wrapper"><label>Ropani</label><input min="0" placeholder="0" type="number" id="ropani-input"></div>
+                <div class="input-wrapper"><label>Aana</label><input min="0" placeholder="0" type="number" id="anna-input"></div>
+                <div class="input-wrapper"><label>Paisa</label><input min="0" placeholder="0" type="number" id="paisa-input"></div>
+                <div class="input-wrapper"><label>Daam</label><input min="0" placeholder="0" type="number" id="daam-input"></div>
+                <button onclick="convertFromRopani()">Convert</button>
+            </div>
+        </div>
+      
+        <div class="system-container">
+                <h3>Bigha System</h3>
+            <div class="input-group ">
+                <div class="input-wrapper"><label>Bigha</label><input min="0" placeholder="0" type="number" id="bigha-input"></div>
+                <div class="input-wrapper"><label>Katha</label><input min="0" placeholder="0" type="number" id="kattha-input"></div>
+                <div class="input-wrapper"><label>Dhur</label><input min="0" placeholder="0" type="number" id="dhur-input"></div>
+                <button onclick="convertFromBigha()">Convert</button>
+            </div>
+        </div>
+    
+        <div>
+            <h3>Other Units</h3>
+        </div>
+        <div class="system-container sq-meter">
+           
+            <div class="input-group">
+                <div class="input-wrapper"><label>Sq. Feet</label><input min="0" placeholder="0" type="number" id="sq-feet-input"></div>
+                <button onclick="convertFromSquareFeet()">Convert</button>
+            </div>
+        </div>
+        
+        <div class="system-container sq-meter">
+            <div class="input-group">
+                <div class="input-wrapper"><label>Sq. Meter</label><input min="0" placeholder="0" type="number" id="sq-meter-input"></div>
+                <button onclick="convertFromSquareMeter()">Convert</button>
+            </div>
+        </div>
+       <div class="clear-container">
+           <button class="clear-btn" onclick="clearAll()">Clear All</button>
+       </div>
+    </div>
+    <button id="goToTop" class="go-to-top">↑</button>
+    <div id="footer"></div>
+    <script type="module" src="src/js/script.js"></script>
+    <script src="src/js/functions.js"></script>
+</body>
+</html>

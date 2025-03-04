@@ -1,6 +1,6 @@
 export function initializeHeader() {
     const header = document.getElementById('header');
-    const isGalleryPage = window.location.pathname.includes('gallery.html');
+    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html');
     header.innerHTML = `
         <header class"site-header>
             <nav class="navbar">
@@ -20,6 +20,7 @@ export function initializeHeader() {
                     <li><a href="${isGalleryPage ? './#team' : '#team'}" class="nav-link">Our Team</a></li>
                     <li><a href="${isGalleryPage ? './#projects' : '#projects'}" class="nav-link">Our Projects</a></li>
                     <li><a href="${isGalleryPage ? './#services' : '#services'}" class="nav-link">Our Services</a></li>
+                    <li><a href="area-converter.html" class="nav-link">Area Converter</a></li>
                     <li><a href="${isGalleryPage ? './#contact' : '#contact'}" class="nav-link">Contact Us</a></li>
                 </ul>
                 <div class="call-us">

@@ -9,6 +9,7 @@ initializeFooter();
 
 // Close modal when clicking outside the modal content
 window.addEventListener("click", function(event) {
+    var modal = document.getElementById("modal");
     if (event.target === modal) {
         modal.style.display = "none"; // Hide modal
     }
@@ -21,7 +22,7 @@ window.onload = () => {
         // Clear the stored target
         sessionStorage.removeItem('scrollTarget');
         // Find the element and scroll to it
-        const targetElement = document.querySelector(`#${scrollTarget}`);
+        const targetElement = document.querySelector(`${scrollTarget}`);
         if (targetElement) {
             setTimeout(() => {
                 targetElement.scrollIntoView({ behavior: 'smooth' });
