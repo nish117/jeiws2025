@@ -342,7 +342,7 @@ footer {
     padding: 10px 0; */
 }
 
-.footer .links, .footer .social, .footer .company-info {
+.footer .footer-links, .footer .social, .footer .company-info {
     margin: 10px;
 }
 footer p {
@@ -360,7 +360,6 @@ footer a {
 }
 .footer .company-info {
     width: 100%;
-    margin-top: -30px;
     font-size: 14px;
 }
 
@@ -758,6 +757,18 @@ h1 {
         height: 40px;
         font-size: 20px;
     }
+    .footer img {
+		height: 60px; /* Set a specific height for the logo */
+		width: auto; /* Maintain aspect ratio */
+		margin-right: 6px; /* Space between logo and company name */
+	}
+    .footer .company-info {
+        width: 100%;
+        font-size: 14px;
+    }
+    .social {
+        padding-bottom: inherit;
+    }
 }
 
 /* Extra Small Screens (max-width: 480px) */
@@ -793,4 +804,13 @@ h1 {
 		right: 15px;
 		padding: 8px 10px;
 	}
+    .footer img {
+		height: 70px; /* Set a specific height for the logo */
+		width: auto; /* Maintain aspect ratio */
+		margin-right: 6px; /* Space between logo and company name */
+	}
+    .footer .company-info {
+        width: 100%;
+        font-size: 14px;
+    }
 } 

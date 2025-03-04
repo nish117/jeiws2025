@@ -24,7 +24,7 @@ export function initializeHeader() {
                     <li><a href="${isGalleryPage ? './#contact' : '#contact'}" class="nav-link">Contact Us</a></li>
                 </ul>
                 <div class="call-us">
-                    <a href="tel:+977-9841618841" class="call-button">Call Now</a> <!-- Replace with your phone number -->
+                    <a href="tel:+977-9811334479" class="call-button">Call Now</a> <!-- Replace with your phone number -->
                 </div>
                 <div class="hamburger" id="hamburger">
                     &#9776; <!-- Hamburger icon -->

@@ -8,15 +8,15 @@ export function initializeFooter() {
                     <img src="assets/logo.png" alt="Company Logo"> 
                 </div>
             </a>
-            <div class="links">
+            <div class="footer-links">
                 <h3>Quick Links</h3>
-                    <a href="${isGalleryPage ? './' : '#'}" class="nav-link">Home</a>
-                    <a href="${isGalleryPage ? './#about' : '#about'}" class="nav-link">About</a>
-                    <a href="${isGalleryPage ? './#team' : '#team'}" class="nav-link">Team</a>
-                    <a href="${isGalleryPage ? './#projects' : '#projects'}" class="nav-link">Projects</a>
-                    <a href="${isGalleryPage ? './#services' : '#services'}" class="nav-link">Services</a>
-                    <a href="area-converter.html" class="nav-link">Area Converter</a>
-                    <a href="${isGalleryPage ? './#contact' : '#contact'}" class="nav-link">Contact</a>
+                    <a href="${isGalleryPage ? './' : '#'}" class="footer-link">Home</a>
+                    <a href="${isGalleryPage ? './#about' : '#about'}" class="footer-link">About</a>
+                    <a href="${isGalleryPage ? './#team' : '#team'}" class="footer-link">Team</a>
+                    <a href="${isGalleryPage ? './#projects' : '#projects'}" class="footer-link">Projects</a>
+                    <a href="${isGalleryPage ? './#services' : '#services'}" class="footer-link">Services</a>
+                    <a href="area-converter.html" class="footer-link">Area Converter</a>
+                    <a href="${isGalleryPage ? './#contact' : '#contact'}" class="footer-link">Contact</a>
             </div>
             <div class="social">
                 <h3>Follow Us</h3>
@@ -32,4 +32,25 @@ export function initializeFooter() {
             </div>
         </footer>
     `;
+    // Add click handler for navigation links
+    const navLinks = footer.querySelectorAll('.footer-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            
+            // If it's a hash link on the current page
+            if (href.startsWith('#')) {
+                e.preventDefault();
+                const targetElement = document.querySelector(href);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+            // If it's a link to the main page with a hash
+            else if (href.startsWith('./#')) {
+                // Store the hash to scroll after page load
+                sessionStorage.setItem('scrollTarget', href.substring(2));
+            }
+        });
+    });
 }
