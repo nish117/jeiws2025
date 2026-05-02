@@ -1,67 +1,235 @@
-.area-container { 
-    background: #e9e9df; 
-    padding: 20px; 
-    border-radius: 8px; 
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-    max-width: 700px; 
-    margin: auto;
-    margin-top: 12%;
-    margin-bottom: 8%;
- }
- .system-container {
-    display: flex;
-    justify-content: space-between;
- }
-.input-group { 
-    margin: 10px 0; 
-    display: flex; 
-    /* align-items: center;  */
-    flex-wrap: wrap; 
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@700;800&display=swap');
+
+/* ===========================================
+   AREA CONVERTER PAGE
+   =========================================== */
+
+/* Page wrapper — sits below the fixed header */
+body > .area-container,
+.area-container{
+  max-width:720px;
+  margin:120px auto 80px;
+  padding:0 20px;
 }
-.input-wrapper { 
-    display: flex; 
-    flex-direction: column; 
-    padding: inherit;
-    /* align-items: center;  */
+
+/* ── Page Header ─────────────────────────── */
+.area-page-title{
+  text-align:center;
+  margin-bottom:40px;
 }
-label { 
-    color: #816f6f;
-    font-size: 12px; 
-    margin-bottom: 5px;
-    font-weight: bold; 
+.area-page-title .section-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--blue);margin-bottom:12px;
 }
-input { padding: 10px;
-     width: 70px; 
-     text-align: center; 
-     border: 1px solid #ccc; 
-     border-radius: 4px; min: 0;    
-      margin-right: 10px; 
-    }
-button { 
-    margin-top: auto;
-    padding: 10px 20px; 
-    background: #007bff;
-    color: white; 
-    border: none; 
-    border-radius: 4px; 
-    cursor: pointer; 
+.area-page-title .section-eyebrow::before,
+.area-page-title .section-eyebrow::after{
+  content:'';width:20px;height:2px;background:currentColor;border-radius:2px;
 }
-button:hover { 
-    background: #0056b3; 
+
+.area-container h2{
+  font-family:'Sora',sans-serif;
+  font-size:2.2rem;font-weight:800;color:var(--ink);
+  letter-spacing:-1px;margin-bottom:0;text-align:center;
+  line-height:1.1;
 }
-.clear-btn { 
-    background: red; 
+.area-container h2::before{
+  content:'UTILITY TOOL';
+  display:block;font-size:10.5px;font-weight:700;letter-spacing:1.8px;
+  text-transform:uppercase;color:var(--blue);margin-bottom:10px;
+  font-family:'Plus Jakarta Sans',sans-serif;
 }
-.clear-btn:hover { 
-    background: darkred; 
+.area-container h2::after{
+  content:'';display:block;width:44px;height:3px;
+  background:var(--blue);border-radius:3px;
+  margin:16px auto 40px;
 }
-.sq-meter input {
-    width: 108px;
+
+/* ── System Container ────────────────────── */
+.system-container{
+  background:var(--bg);
+  border:1.5px solid var(--rule);
+  border-radius:var(--rl);
+  padding:28px 28px 24px;
+  margin-bottom:16px;
+  box-shadow:var(--s1);
+  transition:border-color var(--t),box-shadow var(--t);
 }
-.clear-container {
-    text-align: end;
+.system-container:focus-within{
+  border-color:var(--blue);
+  box-shadow:0 0 0 4px var(--blue-glow),var(--s1);
 }
-.sq-meter label {
-    color: black;
-    font-size: 14px;
+
+.system-container h3{
+  font-family:'Sora',sans-serif;
+  font-size:13px;font-weight:700;color:var(--blue);
+  text-transform:uppercase;letter-spacing:1px;
+  margin-bottom:18px;
+  display:flex;align-items:center;gap:8px;
+}
+.system-container h3::before{
+  content:'';width:4px;height:16px;
+  background:var(--blue);border-radius:2px;
+  display:inline-block;flex-shrink:0;
+}
+
+/* "Other Units" heading (bare div > h3) */
+div:not(.system-container):not(.input-group):not(.input-wrapper):not(.clear-container) > h3{
+  font-family:'Sora',sans-serif;
+  font-size:13px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1px;
+  margin:28px 0 12px;
+  display:flex;align-items:center;gap:8px;
+}
+
+/* ── Input Group ─────────────────────────── */
+.input-group{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  gap:12px 14px;
+}
+
+.input-wrapper{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  flex-shrink:0;
+}
+
+label{
+  font-size:10.5px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.6px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  display:block;
+}
+
+input[type="number"]{
+  padding:11px 14px;
+  width:86px;
+  text-align:center;
+  border:1.5px solid rgba(27,103,153,0.18);
+  border-radius:10px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px;font-weight:600;
+  color:var(--ink);background:var(--bg-2);
+  transition:border-color var(--t),box-shadow var(--t),background var(--t);
+  outline:none;
+  -moz-appearance:textfield;
+  display:block;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{opacity:0.3}
+input[type="number"]:focus{
+  border-color:var(--blue);
+  background:var(--bg);
+  box-shadow:0 0 0 4px var(--blue-glow);
+}
+input[type="number"]::placeholder{color:var(--muted);opacity:0.6}
+
+/* ── Convert Button ──────────────────────── */
+.input-group > button,
+button[onclick]{
+  display:inline-flex !important;
+  align-items:center;
+  gap:6px;
+  padding:11px 22px;
+  background:var(--blue) !important;
+  color:#fff !important;
+  border:none !important;
+  border-radius:100px !important;
+  font-family:'Plus Jakarta Sans',sans-serif !important;
+  font-size:13.5px !important;font-weight:700 !important;
+  cursor:pointer;
+  white-space:nowrap;
+  flex-shrink:0;
+  align-self:flex-end;
+  transition:background var(--t),transform var(--t),box-shadow var(--t) !important;
+  box-shadow:0 3px 14px var(--blue-glow) !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+.input-group > button:hover,
+button[onclick]:hover{
+  background:var(--blue-dim) !important;
+  transform:translateY(-2px) !important;
+  box-shadow:0 6px 22px var(--blue-glow) !important;
+}
+.input-group > button:active,
+button[onclick]:active{transform:translateY(0) !important}
+
+/* ── Sq. Meter/Feet inputs ───────────────── */
+.sq-meter input[type="number"]{width:130px}
+
+/* ── Other units section title ───────────── */
+.area-container > div:not(.system-container):not(.clear-container) h3{
+  font-family:'Sora',sans-serif;
+  font-size:12px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1px;
+  margin:8px 0 0;
+  padding:20px 0 8px;
+  border-top:1px solid var(--rule);
+}
+
+/* ── Clear Button ────────────────────────── */
+.clear-container{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:20px;
+  padding-top:16px;
+  border-top:1px solid var(--rule);
+}
+
+.clear-btn,
+button.clear-btn{
+  display:inline-flex !important;
+  align-items:center;gap:7px;
+  background:transparent !important;
+  color:#DC2626 !important;
+  border:1.5px solid #DC2626 !important;
+  border-radius:100px !important;
+  font-family:'Plus Jakarta Sans',sans-serif !important;
+  font-size:13px !important;font-weight:700 !important;
+  padding:9px 22px !important;
+  cursor:pointer;
+  box-shadow:none !important;
+  transition:all var(--t) !important;
+}
+.clear-btn:hover,
+button.clear-btn:hover{
+  background:#DC2626 !important;
+  color:#fff !important;
+  transform:translateY(-1px) !important;
+  box-shadow:0 4px 14px rgba(220,38,38,0.25) !important;
+}
+
+/* ── Tip card ────────────────────────────── */
+.area-tip{
+  background:var(--blue-pale);
+  border:1px solid rgba(27,103,153,0.15);
+  border-radius:var(--r);
+  padding:14px 18px;
+  margin-bottom:20px;
+  font-size:13px;color:var(--blue);
+  display:flex;align-items:flex-start;gap:10px;
+  line-height:1.6;
+}
+.area-tip i{flex-shrink:0;margin-top:2px;font-size:14px}
+
+/* ===========================================
+   RESPONSIVE
+   =========================================== */
+@media(max-width:600px){
+  .area-container{margin:100px 0 48px;padding:0 16px}
+  .area-container h2{font-size:1.7rem}
+  .system-container{padding:22px 18px 20px}
+  .input-group{gap:10px 10px}
+  input[type="number"]{width:72px;font-size:14px}
+  .sq-meter input[type="number"]{width:110px}
+  .input-group > button,button[onclick]{padding:10px 18px !important;font-size:13px !important}
+}
+@media(max-width:380px){
+  input[type="number"]{width:62px}
+  .sq-meter input[type="number"]{width:96px}
 }

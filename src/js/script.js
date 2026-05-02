@@ -1,11 +1,17 @@
-import { initializeHeader } from './components/header.js';
-import { initializeFooter } from './components/footer.js';
-import { initializePreloader } from './components/preloader.js';
+import { initializeHeader } from './components/header.js?v=3';
+import { initializeFooter } from './components/footer.js?v=4';
+import { initializePreloader } from './components/preloader.js?v=4';
 
 // Initialize components
 initializePreloader();
 initializeHeader();
 initializeFooter();
+
+// Header scroll effect — collapses topbar + darkens navbar
+window.addEventListener('scroll', () => {
+    const siteHeader = document.querySelector('.site-header');
+    if (siteHeader) siteHeader.classList.toggle('scrolled', window.scrollY > 48);
+});
 
 // Close modal when clicking outside the modal content
 window.addEventListener("click", function(event) {
@@ -72,7 +78,7 @@ if(goToTopButton) {
     // Show the button when the user scrolls down 100px from the top of the document
     window.onscroll = function() {
         if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
-            goToTopButton.style.display = "block";
+            goToTopButton.style.display = "flex";
         } else {
             goToTopButton.style.display = "none";
         }
