@@ -329,6 +329,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     backdrop-filter:blur(24px);
     padding:16px 0 24px;gap:4px;z-index:999;
     border-bottom:2px solid var(--blue);
+    max-height:calc(100vh - 62px);overflow-y:auto;
   }
   .nav-links.show{display:flex}
   .nav-links li{width:100%}
