@@ -1,6 +1,6 @@
 export function initializeHeader() {
     const header = document.getElementById('header');
-    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html');
+    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html') || window.location.pathname.includes('vacancies.html');
 
     header.innerHTML = `
         <header class="site-header">
@@ -19,6 +19,7 @@ export function initializeHeader() {
                         <div class="topbar-socials">
                             <a href="https://www.facebook.com/JEIWS" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                             <a href="https://www.instagram.com/jeiws__" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="https://www.tiktok.com/@jeiws_company" target="_blank" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
                             <a href="https://wa.me/9779811334479" target="_blank" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
                         </div>
                     </div>
@@ -40,6 +41,7 @@ export function initializeHeader() {
                     <li><a href="${isGalleryPage ? './#projects' : '#projects'}" class="nav-link">Projects</a></li>
                     <li><a href="${isGalleryPage ? './#team' : '#team'}" class="nav-link">Team</a></li>
                     <li><a href="${isGalleryPage ? './#why-us' : '#why-us'}" class="nav-link">Why Us</a></li>
+                    <li><a href="vacancies.html" class="nav-link"><i class="fas fa-briefcase"></i> Careers</a></li>
                     <li><a href="area-converter.html" class="nav-link nav-link-tool"><i class="fas fa-ruler-combined"></i> Area Tool</a></li>
                     <li><a href="${isGalleryPage ? './#contact' : '#contact'}" class="nav-link nav-link-cta">Contact</a></li>
                 </ul>

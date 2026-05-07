@@ -1,6 +1,6 @@
 export function initializeFooter() {
     const footer = document.getElementById('footer');
-    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html');
+    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html') || window.location.pathname.includes('vacancies.html');
 
     footer.innerHTML = `
         <div class="footer-top-bar"></div>
@@ -15,6 +15,7 @@ export function initializeFooter() {
                     <div class="footer-brand-socials">
                         <a href="https://www.facebook.com/JEIWS" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                         <a href="https://www.instagram.com/jeiws__" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.tiktok.com/@jeiws_company" target="_blank" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
                         <a href="https://wa.me/9779811334479" target="_blank" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
@@ -29,6 +30,7 @@ export function initializeFooter() {
                         <li><a href="${isGalleryPage ? './#projects' : '#projects'}" class="footer-link">Projects</a></li>
                         <li><a href="${isGalleryPage ? './#why-us' : '#why-us'}" class="footer-link">Why Choose Us</a></li>
                         <li><a href="${isGalleryPage ? './#team' : '#team'}" class="footer-link">Our Team</a></li>
+                        <li><a href="vacancies.html" class="footer-link">Careers</a></li>
                         <li><a href="area-converter.html" class="footer-link">Area Converter</a></li>
                     </ul>
                 </div>
