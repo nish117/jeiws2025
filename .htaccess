@@ -9,9 +9,16 @@ Options -Indexes
 FileETag MTime Size
 
 <IfModule mod_headers.c>
+    # HTML — never serve from cache; always fetch fresh from server.
+    # This ensures mobile browsers always get the latest version strings.
+    <FilesMatch "\.html$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+
     # CSS and JS — browsers must revalidate on every request.
-    # If the file is unchanged the server returns 304 (no re-download).
-    # If the file changed it returns 200 with the new content automatically.
+    # Version query strings (?v=N) act as hard cache-busters when files change.
     <FilesMatch "\.(css|js)$">
         Header set Cache-Control "no-cache, must-revalidate"
         Header set Pragma "no-cache"

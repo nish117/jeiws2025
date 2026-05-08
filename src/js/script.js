@@ -1,6 +1,6 @@
-import { initializeHeader } from './components/header.js?v=3';
-import { initializeFooter } from './components/footer.js?v=4';
-import { initializePreloader } from './components/preloader.js?v=4';
+import { initializeHeader } from './components/header.js?v=4';
+import { initializeFooter } from './components/footer.js?v=5';
+import { initializePreloader } from './components/preloader.js?v=5';
 
 // Initialize components
 initializePreloader();
