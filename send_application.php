@@ -11,6 +11,9 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
+define('JEIWS_CONFIG', 1);
+$cfg = require __DIR__ . '/config/mail.php';
+
 $mail = new PHPMailer(true);
 try {
     $name       = htmlspecialchars(trim($_POST["name"]     ?? ''));
@@ -27,12 +30,12 @@ try {
     }
 
     $mail->isSMTP();
-    $mail->Host       = 'smtp.gmail.com';
+    $mail->Host       = $cfg['host'];
     $mail->SMTPAuth   = true;
-    $mail->Username   = 'bajra.nish@gmail.com';
-    $mail->Password   = 'mpiwwacvawbjtipi';
+    $mail->Username   = $cfg['username'];
+    $mail->Password   = $cfg['password'];
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = 587;
+    $mail->Port       = $cfg['port'];
 
     $cvAttached = false;
     if (isset($_FILES['cv']) && $_FILES['cv']['error'] === UPLOAD_ERR_OK) {
@@ -43,13 +46,16 @@ try {
         ];
         $fileMime = mime_content_type($_FILES['cv']['tmp_name']);
         if (in_array($fileMime, $allowedMimes) && $_FILES['cv']['size'] <= 5 * 1024 * 1024) {
-            $mail->addAttachment($_FILES['cv']['tmp_name'], basename($_FILES['cv']['name']));
+            // Sanitize filename: strip path components, keep only safe characters
+            $origName   = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($_FILES['cv']['name']));
+            $safeName   = substr($origName, 0, 100);
+            $mail->addAttachment($_FILES['cv']['tmp_name'], $safeName);
             $cvAttached = true;
         }
     }
 
-    $mail->setFrom('bajra.nish@gmail.com', 'JEIWS Website');
-    $mail->addAddress('bajra.nish@gmail.com');
+    $mail->setFrom($cfg['from'], $cfg['fromName']);
+    $mail->addAddress($cfg['to']);
     $mail->addReplyTo($email, $name);
 
     $cvStatus = $cvAttached ? '&#9989; Attached' : '&#10060; Not provided';

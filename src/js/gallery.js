@@ -1,4 +1,4 @@
-import { projects } from './projects.js';
+const { projects } = await import('./projects.js?v=' + Date.now());
 
 const urlParams = new URLSearchParams(window.location.search);
 const projectId = parseInt(urlParams.get('id'));
@@ -7,11 +7,28 @@ const project = projects.find(p => p.id === projectId);
 const galleryGrid = document.getElementById('gallery-grid');
 const galleryTitle = document.getElementById('gallery-title');
 
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(str)));
+  return d.innerHTML;
+}
+
 if (!project) {
-    if (galleryTitle) galleryTitle.textContent = 'Gallery Not Found';
-    if (galleryGrid) galleryGrid.innerHTML = `<div class="gallery-empty"><i class="fas fa-folder-open"></i><p>Project not found.</p><a href="index.html" class="gallery-back-btn"><i class="fas fa-arrow-left"></i> Back to Projects</a></div>`;
+    document.title = 'JEIWS — Project Not Found';
+    const container = galleryGrid?.closest('.gallery-container');
+    if (container) {
+        container.innerHTML = `
+            <div class="gallery-not-found">
+                <div class="gallery-nf-icon"><i class="fas fa-folder-open"></i></div>
+                <h1 class="gallery-nf-title">Project Not Found</h1>
+                <p class="gallery-nf-text">The project you're looking for doesn't exist or may have been removed.</p>
+                <a href="index.html#projects" class="gallery-back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Projects
+                </a>
+            </div>`;
+    }
 } else {
-    document.title = `JEIWS — ${project.title}`;
+    document.title = `JEIWS — ${escHtml(project.title)}`;
 
     // ── Build hero header ──────────────────────────────
     const container = galleryGrid.closest('.gallery-container');
@@ -23,13 +40,11 @@ if (!project) {
                 <a href="index.html#projects" class="gallery-back-link"><i class="fas fa-arrow-left"></i> All Projects</a>
                 <div class="gallery-hero-meta">
                     <div class="section-eyebrow">Project Gallery</div>
-                    <h1 id="gallery-title">${project.title}</h1>
-                    <p class="gallery-description">${project.description.replace(/<br\s*\/?>/gi, ' · ')}</p>
+                    <h1 id="gallery-title">${escHtml(project.title)}</h1>
+                    <p class="gallery-description">${escHtml(project.description).replace(/&lt;\/?br\s*\/?&gt;/gi, '<br>')}</p>
                 </div>
                 <div class="gallery-hero-stats">
-                    <div class="gallery-stat"><span>${project.gallery.length}</span><small>Photos</small></div>
-                    <div class="gallery-stat-divider"></div>
-                    <div class="gallery-stat"><span>Project #${project.id}</span><small>Portfolio</small></div>
+                    <div class="gallery-stat"><span>${escHtml(project.gallery.length)}</span><small>Photos</small></div>
                 </div>
             </div>
         </div>
@@ -37,7 +52,7 @@ if (!project) {
         <!-- Filter / Count bar -->
         <div class="gallery-toolbar">
             <div class="gallery-toolbar-inner">
-                <span class="gallery-count"><i class="fas fa-images"></i> ${project.gallery.length} images</span>
+                <span class="gallery-count"><i class="fas fa-images"></i> ${escHtml(project.gallery.length)} images</span>
                 <div class="gallery-view-toggle">
                     <button class="gallery-view-btn active" data-view="masonry" title="Masonry"><i class="fas fa-th"></i></button>
                     <button class="gallery-view-btn" data-view="grid" title="Grid"><i class="fas fa-th-large"></i></button>
@@ -58,7 +73,7 @@ if (!project) {
                 <img id="lb-img" src="" alt="">
                 <div class="lightbox-caption">
                     <span id="lb-counter"></span>
-                    <span id="lb-title">${project.title}</span>
+                    <span id="lb-title">${escHtml(project.title)}</span>
                 </div>
             </div>
         </div>
@@ -74,7 +89,7 @@ if (!project) {
         item.style.animationDelay = `${(i % 12) * 0.04}s`;
         item.innerHTML = `
             <div class="gallery-item-inner">
-                <img src="${src}" alt="${project.title} — Photo ${i + 1}" class="gallery-item" loading="lazy">
+                <img src="${escHtml(src)}" alt="${escHtml(project.title)} — Photo ${i + 1}" class="gallery-item" loading="lazy">
                 <div class="gallery-item-overlay">
                     <i class="fas fa-expand-alt"></i>
                 </div>

@@ -6,47 +6,49 @@ require './lib/PHPMailer/src/Exception.php';
 require './lib/PHPMailer/src/PHPMailer.php';
 require './lib/PHPMailer/src/SMTP.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") { 
-    $mail = new PHPMailer(true);
-    try {
-        $mail->isSMTP();                                            //Send using SMTP
-        $mail->Host       = 'smtp.gmail.com';                     //Set the SMTP server to send through
-        $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
-        $mail->Username   = 'bajra.nish@gmail.com';                     //SMTP username
-        $mail->Password   = 'mpiwwacvawbjtipi';                               //SMTP password
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;            //Enable implicit TLS encryption
-        $mail->Port       = 587;  
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    http_response_code(405);
+    exit;
+}
 
-        $name = htmlspecialchars($_POST["name"]);
-        $email = htmlspecialchars($_POST["email"]);
-        $phone = htmlspecialchars($_POST["phone"]);
-        $message = htmlspecialchars($_POST["message"]);
+define('JEIWS_CONFIG', 1);
+$cfg = require __DIR__ . '/config/mail.php';
 
-        $adminEmail = "bajra.nish@gmail.com"; // Change to your email
-        $headers = "From: " . $email . "\r\n";
-        $headers .= "Reply-To: " . $email . "\r\n";
+$mail = new PHPMailer(true);
+try {
+    $mail->isSMTP();
+    $mail->Host       = $cfg['host'];
+    $mail->SMTPAuth   = true;
+    $mail->Username   = $cfg['username'];
+    $mail->Password   = $cfg['password'];
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port       = $cfg['port'];
 
-        // Email Setup
-        $mail->setFrom($email, $name);
-        $mail->addAddress('bajra.nish@gmail.com'); // Admin email
+    $name    = htmlspecialchars($_POST["name"]    ?? '');
+    $email   = filter_var($_POST["email"] ?? '', FILTER_SANITIZE_EMAIL);
+    $phone   = htmlspecialchars($_POST["phone"]   ?? '');
+    $message = htmlspecialchars($_POST["message"] ?? '');
 
-        // Content
-        $mail->isHTML(true);
-        $mail->Subject = "Inquiry From the JEIWS website";
-        $mail->Body    = "<h3>JEIWS Website Message  Request</h3>
+    if (empty($name) || empty($email) || empty($message) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo "error";
+        exit;
+    }
+
+    $mail->setFrom($cfg['from'], $cfg['fromName']);
+    $mail->addAddress($cfg['to']);
+    $mail->addReplyTo($email, $name);
+
+    $mail->isHTML(true);
+    $mail->Subject = "Inquiry From the JEIWS website";
+    $mail->Body    = "<h3>JEIWS Website Message Request</h3>
         <p><strong>Name:</strong> $name</p>
         <p><strong>Email:</strong> $email</p>
         <p><strong>Phone:</strong> $phone</p>
         <p><strong>Message:</strong> $message</p>";
 
-        // Send Email
-        if ($mail->send()) {
-            echo "success";
-        } else {
-            echo "error";
-        }
-    } catch (Exception $e) {
-        echo "Mailer Error: {$mail->ErrorInfo}";
-    }
+    echo $mail->send() ? "success" : "error";
+
+} catch (Exception $e) {
+    echo "error";
 }
 ?>

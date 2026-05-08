@@ -1,8 +1,14 @@
-import { projects } from './projects.js';
+const { projects } = await import('./projects.js?v=' + Date.now());
 
 const carouselTrack = document.querySelector('.carousel-track');
 const carouselEl    = document.querySelector('.carousel');
 const carouselContainer = document.querySelector('.carousel-container');
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(str)));
+  return d.innerHTML;
+}
 
 // Clone last 3 + real + first 3 for seamless infinite loop
 const projectsForCarousel = [
@@ -15,11 +21,11 @@ projectsForCarousel.forEach(project => {
   const card = document.createElement('div');
   card.className = 'project-card';
   card.innerHTML = `
-    <img src="${project.image}" alt="${project.title}">
+    <img src="${escHtml(project.image)}" alt="${escHtml(project.title)}">
     <div class="project-content">
-      <h3>${project.title}</h3>
-      <p>${project.description}</p>
-      <a href="gallery.html?id=${project.id}" class="view-more">View More</a>
+      <h3>${escHtml(project.title)}</h3>
+      <p>${escHtml(project.description).replace(/&lt;\/?br\s*\/?&gt;/gi, '<br>')}</p>
+      <a href="gallery.html?id=${encodeURIComponent(project.id)}" class="view-more">View More</a>
     </div>
   `;
   carouselTrack.appendChild(card);

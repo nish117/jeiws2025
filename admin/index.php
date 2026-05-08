@@ -7,6 +7,7 @@ if (!file_exists($credFile) || !isset($_SESSION['cms_auth'])) {
 }
 require_once __DIR__ . '/functions.php';
 $projects = loadProjects();
+$csrf = csrfToken();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,9 +32,14 @@ $projects = loadProjects();
 
 <main class="cms-main">
   <div class="page-hdr">
+    <?php
+      $totalCount   = count($projects);
+      $draftCount   = count(array_filter($projects, fn($p) => !empty($p['is_draft'])));
+      $publishCount = $totalCount - $draftCount;
+    ?>
     <div>
       <h1>Projects</h1>
-      <p><?= count($projects) ?> project<?= count($projects) !== 1 ? 's' : '' ?></p>
+      <p><?= $publishCount ?> published<?= $draftCount ? ' &middot; ' . $draftCount . ' draft' . ($draftCount !== 1 ? 's' : '') : '' ?></p>
     </div>
     <a href="project.php" class="btn btn-primary">+ Add Project</a>
   </div>
@@ -54,11 +60,14 @@ $projects = loadProjects();
            onerror="this.src='../assets/favicon.png'">
       <div class="proj-card-body">
         <h3 title="<?= htmlspecialchars($p['title']) ?>"><?= htmlspecialchars($p['title']) ?></h3>
-        <div class="proj-card-meta"><?= count($p['gallery'] ?? []) ?> photos &middot; ID #<?= $p['id'] ?></div>
+        <div class="proj-card-meta">
+          <?php if (!empty($p['is_draft'])): ?><span class="proj-draft-badge">Draft</span> <?php endif ?>
+          <?= count($p['gallery'] ?? []) ?> photos &middot; ID #<?= $p['id'] ?>
+        </div>
         <div class="proj-card-actions">
           <a href="project.php?id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm">✏ Edit</a>
           <button class="btn btn-danger btn-sm"
-                  onclick="confirmDelete(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['title'])) ?>')">
+                  onclick="confirmDelete(<?= json_encode($p['id']) ?>, '<?= htmlspecialchars(addslashes($p['title'])) ?>')">
             🗑 Delete
           </button>
         </div>
@@ -83,6 +92,7 @@ $projects = loadProjects();
 </div>
 
 <script>
+const CSRF = <?= json_encode($csrf) ?>;
 let _cb = null;
 function confirmDelete(id, title) {
   document.getElementById('confirm-msg').textContent =
@@ -105,7 +115,7 @@ async function doDelete(id) {
 }
 
 async function post(data) {
-  const body = new URLSearchParams(data);
+  const body = new URLSearchParams({ ...data, csrf_token: CSRF });
   const res  = await fetch('api.php', { method: 'POST', body });
   return res.json();
 }

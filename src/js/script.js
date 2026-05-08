@@ -22,17 +22,17 @@ window.addEventListener("click", function(event) {
 });
 // Scroll to top when page loads/reloads
 window.onload = () => {
-    // Check if there's a stored scroll target
     const scrollTarget = sessionStorage.getItem('scrollTarget');
     if (scrollTarget) {
-        // Clear the stored target
         sessionStorage.removeItem('scrollTarget');
-        // Find the element and scroll to it
-        const targetElement = document.querySelector(`${scrollTarget}`);
+        const targetElement = document.querySelector(scrollTarget);
         if (targetElement) {
-            setTimeout(() => {
-                targetElement.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+            setTimeout(() => targetElement.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+    } else if (window.location.hash) {
+        const targetElement = document.querySelector(window.location.hash);
+        if (targetElement) {
+            setTimeout(() => targetElement.scrollIntoView({ behavior: 'smooth' }), 100);
         }
     } else {
         window.scrollTo(0, 0);
@@ -42,7 +42,12 @@ window.onload = () => {
 // Handle history navigation (back/forward buttons)
 window.onpageshow = function(event) {
     if (event.persisted) {
-        window.scrollTo(0, 0);
+        if (window.location.hash) {
+            const targetElement = document.querySelector(window.location.hash);
+            if (targetElement) targetElement.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            window.scrollTo(0, 0);
+        }
     }
 };
 

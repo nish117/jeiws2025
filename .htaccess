@@ -1,3 +1,6 @@
+# CMS setup secret — change this to something long and random before first use
+SetEnv CMS_SETUP_SECRET thisisthesecretcodeforjeiws2022
+
 # Prevent directory listing
 Options -Indexes
 

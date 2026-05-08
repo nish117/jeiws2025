@@ -8,14 +8,17 @@ if (!file_exists($credFile) || !isset($_SESSION['cms_auth'])) {
 require_once __DIR__ . '/functions.php';
 
 $projects = loadProjects();
-$id       = isset($_GET['id']) ? intval($_GET['id']) : null;
-$isNew    = $id === null;
-$idx      = $isNew ? -1 : findProject($projects, $id);
+$csrf = csrfToken();
+$rawId = $_GET['id'] ?? null;
+$id    = $rawId !== null ? parseId($rawId) : null;
+if ($rawId !== null && $id === '') { header('Location: index.php'); exit; }
+$isNew = ($id === null);
+$idx   = $isNew ? -1 : findProject($projects, $id);
 
 if (!$isNew && $idx === -1) { header('Location: index.php'); exit; }
 
 $p = $isNew
-    ? ['id' => nextId($projects), 'title' => '', 'description' => '', 'image' => '', 'gallery' => []]
+    ? ['id' => '', 'title' => '', 'description' => '', 'image' => '', 'gallery' => []]
     : $projects[$idx];
 ?>
 <!DOCTYPE html>
@@ -71,6 +74,18 @@ $p = $isNew
           <textarea id="proj-desc" rows="6"
                     placeholder="Location, area, notes..."><?= htmlspecialchars($p['description']) ?></textarea>
         </div>
+        <div class="draft-row">
+          <label for="proj-published">Visibility</label>
+          <div class="toggle-wrap">
+            <label class="toggle-switch">
+              <input type="checkbox" id="proj-published" <?= empty($p['is_draft']) ? 'checked' : '' ?>>
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-status <?= empty($p['is_draft']) ? 'published' : 'draft' ?>" id="draft-status">
+              <?= empty($p['is_draft']) ? 'Published' : 'Draft' ?>
+            </span>
+          </div>
+        </div>
         <button class="btn btn-primary" id="save-btn" onclick="saveDetails()">
           💾 Save Details
         </button>
@@ -97,6 +112,7 @@ $p = $isNew
         <div class="card-title">
           Gallery
           <small id="photo-count"><?= count($p['gallery']) ?> photo<?= count($p['gallery']) !== 1 ? 's' : '' ?></small>
+          <span class="drag-hint">drag to reorder</span>
         </div>
 
         <?php if ($isNew): ?>
@@ -106,15 +122,22 @@ $p = $isNew
         <?php endif ?>
 
         <div class="photo-grid" id="photo-grid">
-          <?php foreach ($p['gallery'] as $photo):
-            $isMain = ($photo === $p['image']);
-            $esc    = htmlspecialchars($photo);
-            $js     = htmlspecialchars(addslashes($photo));
+          <?php
+            $unpublishedImgs = $p['unpublished_images'] ?? [];
+            foreach ($p['gallery'] as $photo):
+              $isMain = ($photo === $p['image']);
+              $isPub  = !in_array($photo, $unpublishedImgs, true);
+              $esc    = htmlspecialchars($photo);
+              $js     = htmlspecialchars(addslashes($photo));
           ?>
-          <div class="photo-item <?= $isMain ? 'is-main' : '' ?>" data-path="<?= $esc ?>">
+          <div class="photo-item <?= $isMain ? 'is-main' : '' ?><?= !$isPub ? ' is-unpub' : '' ?>" draggable="true" data-path="<?= $esc ?>">
             <img src="../<?= $esc ?>" loading="lazy" alt=""
                  onerror="this.parentElement.style.background='#e8eef4';this.style.display='none'">
             <div class="photo-overlay">
+              <span class="photo-zoom-hint">&#128269;</span>
+              <button class="photo-btn vis-btn<?= !$isPub ? ' is-unpub' : '' ?>"
+                      title="<?= $isPub ? 'Hide from gallery' : 'Show in gallery' ?>"
+                      onclick="togglePublish('<?= $js ?>', this)">&#128065;</button>
               <?php if (!$isMain): ?>
               <button class="photo-btn" title="Set as main" onclick="setMain('<?= $js ?>')">⭐</button>
               <?php endif ?>
@@ -144,25 +167,49 @@ $p = $isNew
 
 <div class="toasts" id="toasts"></div>
 
+<!-- ── CMS Lightbox ──────────────────────────────── -->
+<div id="cms-lb" class="cms-lb">
+  <button class="cms-lb-close" id="cms-lb-close" aria-label="Close">&#10005;</button>
+  <button class="cms-lb-nav cms-lb-prev" id="cms-lb-prev" aria-label="Previous">&#8249;</button>
+  <button class="cms-lb-nav cms-lb-next" id="cms-lb-next" aria-label="Next">&#8250;</button>
+  <div class="cms-lb-inner">
+    <img id="cms-lb-img" src="" alt="">
+  </div>
+</div>
+
 <script>
-const PID   = <?= $p['id'] ?>;
+const PID    = <?= json_encode($p['id']) ?>;
 const IS_NEW = <?= $isNew ? 'true' : 'false' ?>;
+const CSRF   = <?= json_encode($csrf) ?>;
+
+/* ── Draft toggle label ────────────────────────── */
+document.getElementById('proj-published').addEventListener('change', function() {
+  const status = document.getElementById('draft-status');
+  if (this.checked) {
+    status.textContent = 'Published';
+    status.className = 'toggle-status published';
+  } else {
+    status.textContent = 'Draft';
+    status.className = 'toggle-status draft';
+  }
+});
 
 /* ── Save details ──────────────────────────────── */
 async function saveDetails() {
-  const title = document.getElementById('proj-title').value.trim();
-  const desc  = document.getElementById('proj-desc').value.trim();
+  const title   = document.getElementById('proj-title').value.trim();
+  const desc    = document.getElementById('proj-desc').value.trim();
+  const isDraft = document.getElementById('proj-published').checked ? 0 : 1;
   if (!title) { toast('Please enter a project title.', 'err'); return; }
 
   const btn = document.getElementById('save-btn');
   btn.disabled = true; btn.textContent = 'Saving…';
 
-  const r = await post({ action: 'save_project', project_id: PID, title, description: desc });
+  const r = await post({ action: 'save_project', project_id: PID, title, description: desc, is_draft: isDraft });
 
   btn.disabled = false; btn.innerHTML = '💾 Save Details';
 
   if (r.success) {
-    toast('Saved!', 'ok');
+    toast(isDraft ? 'Saved as draft.' : 'Published!', 'ok');
     if (IS_NEW) window.location.href = 'project.php?id=' + r.project_id;
   } else {
     toast(r.error || 'Save failed.', 'err');
@@ -180,6 +227,22 @@ async function setMain(photo) {
     if (prev) { prev.src = '../' + photo; prev.style.display = 'block'; }
     toast('Main image updated.', 'ok');
     setTimeout(() => location.reload(), 700);
+  } else {
+    toast(r.error || 'Failed.', 'err');
+  }
+}
+
+/* ── Toggle image publish ──────────────────────── */
+async function togglePublish(photo, btn) {
+  btn.textContent = '…';
+  const r = await post({ action: 'toggle_image_publish', project_id: PID, photo });
+  btn.innerHTML = '&#128065;';
+  if (r.success) {
+    const item = btn.closest('.photo-item');
+    item.classList.toggle('is-unpub', !r.published);
+    btn.classList.toggle('is-unpub', !r.published);
+    btn.title = r.published ? 'Hide from gallery' : 'Show in gallery';
+    toast(r.published ? 'Image visible on site.' : 'Image hidden from site.', 'ok');
   } else {
     toast(r.error || 'Failed.', 'err');
   }
@@ -227,6 +290,7 @@ async function uploadFiles(files) {
     const fd = new FormData();
     fd.append('action', 'upload_photo');
     fd.append('project_id', PID);
+    fd.append('csrf_token', CSRF);
     fd.append('photo', files[i]);
 
     const res = await fetch('api.php', { method: 'POST', body: fd });
@@ -235,6 +299,7 @@ async function uploadFiles(files) {
     if (r.success) {
       appendPhoto(r.path, r.is_first_image);
       adjustCount(1);
+      if (r.saved_kb) toast(`Saved at ${r.saved_kb} KB`, 'ok');
     } else {
       toast(`${files[i].name}: ${r.error || 'upload error'}`, 'err');
     }
@@ -250,11 +315,14 @@ function appendPhoto(path, isFirst) {
   const grid = document.getElementById('photo-grid');
   const div  = document.createElement('div');
   div.className    = 'photo-item' + (isFirst ? ' is-main' : '');
+  div.draggable    = true;
   div.dataset.path = path;
   const esc = path.replace(/'/g, "\\'");
   div.innerHTML = `
     <img src="../${path}" loading="lazy" alt="">
     <div class="photo-overlay">
+      <span class="photo-zoom-hint">&#128269;</span>
+      <button class="photo-btn vis-btn" title="Hide from gallery" onclick="togglePublish('${esc}', this)">&#128065;</button>
       ${!isFirst ? `<button class="photo-btn" title="Set as main" onclick="setMain('${esc}')">⭐</button>` : ''}
       <button class="photo-btn del" title="Delete" onclick="deletePhoto('${esc}', this)">🗑</button>
     </div>`;
@@ -275,7 +343,7 @@ function adjustCount(delta) {
 async function post(data) {
   const r = await fetch('api.php', {
     method: 'POST',
-    body: new URLSearchParams(data)
+    body: new URLSearchParams({ ...data, csrf_token: CSRF })
   });
   return r.json();
 }
@@ -287,6 +355,128 @@ function toast(msg, type = 'ok') {
   document.getElementById('toasts').appendChild(t);
   setTimeout(() => t.remove(), 3200);
 }
+
+/* ── Drag-and-drop reorder ─────────────────────── */
+(function () {
+  const grid = document.getElementById('photo-grid');
+  let dragSrc = null;
+
+  grid.addEventListener('dragstart', e => {
+    if (e.target.closest('.photo-btn')) { e.preventDefault(); return; }
+    const item = e.target.closest('.photo-item');
+    if (!item) return;
+    dragSrc = item;
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.dataset.path);
+  });
+
+  grid.addEventListener('dragend', () => {
+    document.querySelectorAll('#photo-grid .photo-item').forEach(el => {
+      el.classList.remove('dragging', 'drag-before', 'drag-after');
+    });
+    dragSrc = null;
+  });
+
+  grid.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const target = e.target.closest('.photo-item');
+    document.querySelectorAll('#photo-grid .photo-item').forEach(el => el.classList.remove('drag-before', 'drag-after'));
+    if (!target || target === dragSrc) return;
+    const mid = target.getBoundingClientRect().left + target.getBoundingClientRect().width / 2;
+    target.classList.add(e.clientX < mid ? 'drag-before' : 'drag-after');
+  });
+
+  grid.addEventListener('dragleave', e => {
+    const target = e.target.closest('.photo-item');
+    if (target) target.classList.remove('drag-before', 'drag-after');
+  });
+
+  grid.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('.photo-item');
+    if (!target || target === dragSrc || !dragSrc) return;
+    target.classList.remove('drag-before', 'drag-after');
+
+    const mid = target.getBoundingClientRect().left + target.getBoundingClientRect().width / 2;
+    if (e.clientX < mid) {
+      grid.insertBefore(dragSrc, target);
+    } else {
+      target.after(dragSrc);
+    }
+
+    saveOrder();
+  });
+
+  async function saveOrder() {
+    const paths = Array.from(grid.querySelectorAll('.photo-item')).map(el => el.dataset.path);
+    const params = new URLSearchParams({ action: 'reorder', project_id: PID, csrf_token: CSRF });
+    paths.forEach(p => params.append('order[]', p));
+    const res  = await fetch('api.php', { method: 'POST', body: params });
+    const data = await res.json();
+    if (data.success) {
+      toast('Order saved.', 'ok');
+    } else {
+      toast(data.error || 'Failed to save order.', 'err');
+    }
+  }
+})();
+
+/* ── CMS Lightbox ──────────────────────────────── */
+const lb      = document.getElementById('cms-lb');
+const lbImg   = document.getElementById('cms-lb-img');
+const lbClose = document.getElementById('cms-lb-close');
+const lbPrev  = document.getElementById('cms-lb-prev');
+const lbNext  = document.getElementById('cms-lb-next');
+let lbCurrent = 0;
+
+function getPhotoItems() {
+  return Array.from(document.querySelectorAll('#photo-grid .photo-item'));
+}
+
+function openLb(index) {
+  const items = getPhotoItems();
+  if (!items.length) return;
+  lbCurrent = ((index % items.length) + items.length) % items.length;
+  const src = items[lbCurrent].querySelector('img').src;
+  lbImg.style.opacity = '0';
+  lbImg.onload = () => { lbImg.style.opacity = '1'; };
+  lbImg.src = src;
+  lb.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  lbPrev.style.visibility = items.length > 1 ? 'visible' : 'hidden';
+  lbNext.style.visibility = items.length > 1 ? 'visible' : 'hidden';
+}
+
+function closeLb() {
+  lb.classList.remove('active');
+  document.body.style.overflow = '';
+  lbImg.src = '';
+}
+
+lbClose.addEventListener('click', closeLb);
+lbPrev.addEventListener('click', () => openLb(lbCurrent - 1));
+lbNext.addEventListener('click', () => openLb(lbCurrent + 1));
+
+lb.addEventListener('click', e => {
+  if (!e.target.closest('.cms-lb-inner') && !e.target.closest('.cms-lb-nav') && !e.target.closest('.cms-lb-close')) closeLb();
+});
+
+document.addEventListener('keydown', e => {
+  if (!lb.classList.contains('active')) return;
+  if (e.key === 'Escape')      closeLb();
+  if (e.key === 'ArrowLeft')   openLb(lbCurrent - 1);
+  if (e.key === 'ArrowRight')  openLb(lbCurrent + 1);
+});
+
+// Event delegation — click photo to open, ignore action buttons
+document.getElementById('photo-grid').addEventListener('click', e => {
+  if (e.target.closest('.photo-btn')) return;
+  const item = e.target.closest('.photo-item');
+  if (!item) return;
+  openLb(getPhotoItems().indexOf(item));
+});
 </script>
 </body>
 </html>

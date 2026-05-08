@@ -12,13 +12,16 @@ if (!file_exists($credFile) || !isset($_SESSION['cms_auth'])) {
 
 require_once __DIR__ . '/functions.php';
 
+// All mutating requests must carry a valid CSRF token
+verifyCsrf();
+
 $action = $_POST['action'] ?? '';
 
 switch ($action) {
 
     /* ── Create or update project details ───────── */
     case 'save_project': {
-        $id    = intval($_POST['project_id'] ?? 0);
+        $id    = parseId($_POST['project_id'] ?? '');
         $title = trim($_POST['title']       ?? '');
         $desc  = trim($_POST['description'] ?? '');
 
@@ -27,14 +30,18 @@ switch ($action) {
         $projects = loadProjects();
         $idx      = findProject($projects, $id);
 
+        $isDraft = isset($_POST['is_draft']) && $_POST['is_draft'] === '1';
+
         if ($idx === -1) {
-            // New project — create image directory
+            // New project — always generate ID server-side
+            $id  = generateId($projects);
             $dir = IMG_BASE . '/' . $id;
             if (!is_dir($dir)) mkdir($dir, 0755, true);
-            $projects[] = ['id' => $id, 'title' => $title, 'description' => $desc, 'image' => '', 'gallery' => []];
+            $projects[] = ['id' => $id, 'title' => $title, 'description' => $desc, 'image' => '', 'gallery' => [], 'is_draft' => $isDraft];
         } else {
             $projects[$idx]['title']       = $title;
             $projects[$idx]['description'] = $desc;
+            $projects[$idx]['is_draft']    = $isDraft;
         }
 
         saveProjects($projects);
@@ -44,7 +51,7 @@ switch ($action) {
 
     /* ── Upload a photo ─────────────────────────── */
     case 'upload_photo': {
-        $id = intval($_POST['project_id'] ?? 0);
+        $id = parseId($_POST['project_id'] ?? '');
         if (!$id) { ok_err('Invalid project ID'); }
 
         if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
@@ -69,7 +76,7 @@ switch ($action) {
         $filename = time() . '_' . bin2hex(random_bytes(4)) . '.' . $extMap[$mime];
         $dest     = $imgDir . '/' . $filename;
 
-        if (!move_uploaded_file($file['tmp_name'], $dest)) { ok_err('Could not save file'); }
+        if (!processImage($file['tmp_name'], $dest, $mime)) { ok_err('Could not process image'); }
 
         $urlPath  = IMG_URL . '/' . $id . '/' . $filename;
         $projects = loadProjects();
@@ -82,13 +89,14 @@ switch ($action) {
         if ($isFirst) $projects[$idx]['image'] = $urlPath;
 
         saveProjects($projects);
-        echo json_encode(['success' => true, 'path' => $urlPath, 'is_first_image' => $isFirst]);
+        $savedKb = round(filesize($dest) / 1024);
+        echo json_encode(['success' => true, 'path' => $urlPath, 'is_first_image' => $isFirst, 'saved_kb' => $savedKb]);
         break;
     }
 
     /* ── Delete a photo ─────────────────────────── */
     case 'delete_photo': {
-        $id    = intval($_POST['project_id'] ?? 0);
+        $id    = parseId($_POST['project_id'] ?? '');
         $photo = safePath($_POST['photo'] ?? '');
 
         if (!$id || !$photo) { ok_err('Invalid request'); }
@@ -120,7 +128,7 @@ switch ($action) {
 
     /* ── Set main / featured image ──────────────── */
     case 'set_main_image': {
-        $id    = intval($_POST['project_id'] ?? 0);
+        $id    = parseId($_POST['project_id'] ?? '');
         $photo = safePath($_POST['photo'] ?? '');
 
         if (!$id || !$photo) { ok_err('Invalid request'); }
@@ -129,19 +137,56 @@ switch ($action) {
         $idx      = findProject($projects, $id);
         if ($idx === -1) { ok_err('Project not found'); }
 
+        // Only allow photos that are already in this project's gallery
+        if (!in_array($photo, $projects[$idx]['gallery'], true)) {
+            ok_err('Photo does not belong to this project');
+        }
+
         $projects[$idx]['image'] = $photo;
         saveProjects($projects);
         echo json_encode(['success' => true]);
         break;
     }
 
+    /* ── Toggle individual image publish state ──── */
+    case 'toggle_image_publish': {
+        $id    = parseId($_POST['project_id'] ?? '');
+        $photo = safePath($_POST['photo'] ?? '');
+
+        if (!$id || !$photo) { ok_err('Invalid request'); }
+
+        $projects = loadProjects();
+        $idx      = findProject($projects, $id);
+        if ($idx === -1) { ok_err('Project not found'); }
+
+        if (!in_array($photo, $projects[$idx]['gallery'], true)) {
+            ok_err('Photo not in this project');
+        }
+
+        $unpublished    = $projects[$idx]['unpublished_images'] ?? [];
+        $wasUnpublished = in_array($photo, $unpublished, true);
+
+        if ($wasUnpublished) {
+            $unpublished  = array_values(array_filter($unpublished, fn($p) => $p !== $photo));
+            $nowPublished = true;
+        } else {
+            $unpublished[] = $photo;
+            $nowPublished  = false;
+        }
+
+        $projects[$idx]['unpublished_images'] = $unpublished;
+        saveProjects($projects);
+        echo json_encode(['success' => true, 'published' => $nowPublished]);
+        break;
+    }
+
     /* ── Delete entire project ──────────────────── */
     case 'delete_project': {
-        $id = intval($_POST['project_id'] ?? 0);
+        $id = parseId($_POST['project_id'] ?? '');
         if (!$id) { ok_err('Invalid ID'); }
 
         $projects = loadProjects();
-        $projects = array_values(array_filter($projects, fn($p) => (int)$p['id'] !== $id));
+        $projects = array_values(array_filter($projects, fn($p) => $p['id'] !== $id));
 
         // Delete image directory
         deleteDir(IMG_BASE . '/' . $id);
@@ -153,7 +198,7 @@ switch ($action) {
 
     /* ── Reorder gallery ────────────────────────── */
     case 'reorder': {
-        $id    = intval($_POST['project_id'] ?? 0);
+        $id    = parseId($_POST['project_id'] ?? '');
         $order = $_POST['order'] ?? [];   // array of photo paths
 
         if (!$id || !is_array($order)) { ok_err('Invalid request'); }

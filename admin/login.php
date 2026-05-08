@@ -9,23 +9,31 @@ $success  = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($isSetup) {
-        $pw  = $_POST['password']  ?? '';
-        $pw2 = $_POST['password2'] ?? '';
-        if (strlen($pw) < 6) {
-            $error = 'Password must be at least 6 characters.';
-        } elseif ($pw !== $pw2) {
-            $error = 'Passwords do not match.';
+        // Require a server-side setup secret to prevent anyone from creating admin credentials
+        $setupSecret = getenv('CMS_SETUP_SECRET');
+        $givenSecret = $_POST['setup_secret'] ?? '';
+        if ($setupSecret && !hash_equals($setupSecret, $givenSecret)) {
+            $error = 'Invalid setup secret.';
         } else {
-            $hash = password_hash($pw, PASSWORD_BCRYPT);
-            $dir  = dirname($credFile);
-            if (!is_dir($dir)) mkdir($dir, 0755, true);
-            file_put_contents($credFile, $hash);
-            $success = 'Password created — you can now log in.';
-            $isSetup = false;
+            $pw  = $_POST['password']  ?? '';
+            $pw2 = $_POST['password2'] ?? '';
+            if (strlen($pw) < 8) {
+                $error = 'Password must be at least 8 characters.';
+            } elseif ($pw !== $pw2) {
+                $error = 'Passwords do not match.';
+            } else {
+                $hash = password_hash($pw, PASSWORD_BCRYPT);
+                $dir  = dirname($credFile);
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                file_put_contents($credFile, $hash);
+                $success = 'Password created — you can now log in.';
+                $isSetup = false;
+            }
         }
     } else {
         $stored = trim(file_get_contents($credFile));
         if (password_verify($_POST['password'] ?? '', $stored)) {
+            session_regenerate_id(true);
             $_SESSION['cms_auth'] = true;
             header('Location: index.php'); exit;
         }
@@ -52,9 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if ($success): ?><div class="alert alert-ok" ><?= htmlspecialchars($success) ?></div><?php endif ?>
 
     <form method="POST">
+      <?php if ($isSetup): ?>
+      <div class="form-group">
+        <label>Setup Secret</label>
+        <input type="password" name="setup_secret" required autofocus placeholder="Server setup secret">
+      </div>
+      <?php endif ?>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" name="password" required autofocus placeholder="Enter password">
+        <input type="password" name="password" required <?= !$isSetup ? 'autofocus' : '' ?> placeholder="Enter password">
       </div>
       <?php if ($isSetup): ?>
       <div class="form-group">

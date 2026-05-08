@@ -1103,13 +1103,28 @@ footer p{line-height:1.8;margin:0}
 .lightbox-next{right:24px}
 .lightbox-nav:hover{background:var(--blue);border-color:var(--blue)}
 
-/* ── Empty / error state ──────────────────── */
-.gallery-empty{
-  text-align:center;padding:80px 24px;color:var(--muted);
-  grid-column:1/-1;
+/* ── Not-found / error state ──────────────── */
+.gallery-not-found{
+  min-height:calc(100vh - 120px);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:60px 24px;
 }
-.gallery-empty i{font-size:48px;color:var(--rule);margin-bottom:16px;display:block}
-.gallery-empty p{font-size:16px;margin-bottom:24px}
+.gallery-nf-icon{
+  width:96px;height:96px;border-radius:50%;
+  background:var(--blue-pale);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:28px;
+}
+.gallery-nf-icon i{font-size:40px;color:var(--blue)}
+.gallery-nf-title{
+  font-size:2rem;font-weight:800;color:var(--text);
+  margin-bottom:12px;
+}
+.gallery-nf-text{
+  font-size:15px;color:var(--muted);
+  max-width:360px;margin-bottom:36px;line-height:1.7;
+}
 .gallery-back-btn{
   display:inline-flex;align-items:center;gap:8px;
   background:var(--blue);color:#fff;
@@ -1217,9 +1232,10 @@ footer p{line-height:1.8;margin:0}
 .vacancies-hero-stat .stat-val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:#fff;letter-spacing:-1px;line-height:1}
 .vacancies-hero-stat .stat-lbl{font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:2px;margin-top:5px}
 .vacancies-hero-stat-divider{width:1px;height:36px;background:rgba(255,255,255,0.1)}
-.vacancies-hero-back{display:inline-flex;align-items:center;gap:8px;color:rgba(255,255,255,0.5);text-decoration:none;font-size:13px;font-weight:600;transition:var(--t);padding:6px 14px 6px 10px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);margin-bottom:24px}
+.vacancies-hero-back{position:absolute;top:28px;left:48px;z-index:2;display:inline-flex;align-items:center;gap:8px;color:rgba(255,255,255,0.5);text-decoration:none;font-size:13px;font-weight:600;transition:var(--t);padding:6px 14px 6px 10px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05)}
 .vacancies-hero-back:hover{color:#fff;background:rgba(255,255,255,0.1);transform:translateX(-3px)}
 .vacancies-hero-back i{font-size:12px}
+@media(max-width:768px){.vacancies-hero-back{top:20px;left:24px}}
 
 /* ── Vacancies Section ────────────────────── */
 .vacancies-section{background:var(--bg-2)}
