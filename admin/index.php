@@ -67,7 +67,9 @@ $csrf = csrfToken();
         <div class="proj-card-actions">
           <a href="project.php?id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm">✏ Edit</a>
           <button class="btn btn-danger btn-sm"
-                  onclick="confirmDelete(<?= json_encode($p['id']) ?>, '<?= htmlspecialchars(addslashes($p['title'])) ?>')">
+                  data-id="<?= htmlspecialchars($p['id']) ?>"
+                  data-title="<?= htmlspecialchars($p['title']) ?>"
+                  onclick="confirmDelete(this.dataset.id, this.dataset.title)">
             🗑 Delete
           </button>
         </div>

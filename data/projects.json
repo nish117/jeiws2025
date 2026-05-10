@@ -316,17 +316,5 @@
             "assets/project-images/1ad54472/16.jpg",
             "assets/project-images/1ad54472/final.jpg"
         ]
-    },
-    {
-        "id": "91be57d9",
-        "title": "test",
-        "description": "test",
-        "image": "assets/project-images/91be57d9/1778228149_84f489d1.png",
-        "gallery": [
-            "assets/project-images/91be57d9/1778228149_84f489d1.png",
-            "assets/project-images/91be57d9/1778228149_67317c6e.png",
-            "assets/project-images/91be57d9/1778228150_51ec4c28.png"
-        ],
-        "is_draft": false
     }
 ]
