@@ -54,14 +54,14 @@ if (!project) {
             <div class="gallery-toolbar-inner">
                 <span class="gallery-count"><i class="fas fa-images"></i> ${escHtml(project.gallery.length)} images</span>
                 <div class="gallery-view-toggle">
-                    <button class="gallery-view-btn active" data-view="masonry" title="Masonry"><i class="fas fa-th"></i></button>
-                    <button class="gallery-view-btn" data-view="grid" title="Grid"><i class="fas fa-th-large"></i></button>
+                    <button class="gallery-view-btn" data-view="masonry" title="Masonry"><i class="fas fa-th"></i></button>
+                    <button class="gallery-view-btn active" data-view="grid" title="Grid"><i class="fas fa-th-large"></i></button>
                 </div>
             </div>
         </div>
 
         <!-- Gallery Grid -->
-        <div class="gallery gallery-masonry" id="gallery-grid"></div>
+        <div class="gallery gallery-uniform" id="gallery-grid"></div>
 
         <!-- Lightbox -->
         <div class="lightbox" id="lightbox" role="dialog" aria-modal="true">

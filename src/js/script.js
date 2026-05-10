@@ -97,25 +97,29 @@ if(goToTopButton) {
 }
 
 const contactForm = document.getElementById("contactForm");
-if(contactForm) {
-    contactForm.addEventListener("submit", function(event) {
-        event.preventDefault(); // Prevent default form submission
-        let formData = new FormData(this);
-        
-        fetch("send_email.php", {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.text())
-        .then(data => {
-            if (data.trim() === "success") {
+if (contactForm) {
+    contactForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+        const btn = this.querySelector('button[type="submit"]') || this.querySelector('button');
+        const origText = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+        try {
+            const res  = await fetch("send_email.php", { method: "POST", body: new FormData(this) });
+            const data = await res.json();
+            if (data.ok) {
                 document.getElementById("modal").style.display = "flex";
-                document.getElementById("contactForm").reset();
+                contactForm.reset();
             } else {
-                alert("Something went wrong. Please try again.");
+                console.error("Mail error:", data.error);
+                alert("Could not send your message. Please try again or contact us directly.");
             }
-        })
-        .catch(error => console.error("Error:", error));
+        } catch (err) {
+            console.error("Fetch error:", err);
+            alert("Network error. Please check your connection and try again.");
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = origText; }
+        }
     });
 }
 
