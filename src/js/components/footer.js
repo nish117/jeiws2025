@@ -90,7 +90,8 @@ export function initializeFooter() {
                 e.preventDefault();
                 const targetElement = document.querySelector(href);
                 if (targetElement) {
-                    const offset = 90;
+                    const headerEl = document.querySelector('.site-header');
+                    const offset = headerEl ? headerEl.offsetHeight : 70;
                     const top = targetElement.getBoundingClientRect().top + window.scrollY - offset;
                     window.scrollTo({ top, behavior: 'smooth' });
                 }
