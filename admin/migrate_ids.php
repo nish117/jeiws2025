@@ -17,13 +17,17 @@ $log      = [];
 foreach ($projects as &$p) {
     $oldId = (string)($p['id'] ?? '');
 
-    // Skip projects that already have a valid 8-char hex ID
-    if (preg_match('/^[a-f0-9]{8}$/', $oldId)) {
+    // Skip projects already migrated: pure 8-char hex OR 8-char hex + underscore suffix
+    if (preg_match('/^[a-f0-9]{8}(_.*)?$/', $oldId)) {
         $log[] = "SKIP  id=$oldId  \"{$p['title']}\"";
         continue;
     }
 
-    $newId = generateId($projects);
+    $existingIds = array_column($projects, 'id');
+    do {
+        $hexPart = bin2hex(random_bytes(4));
+        $newId   = $hexPart . '_' . $oldId;
+    } while (in_array($newId, $existingIds, true));
 
     // Rename image directory on disk
     $oldDir = IMG_BASE . '/' . $oldId;

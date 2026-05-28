@@ -6,7 +6,7 @@
     <title>Careers &mdash; J.E. Infrastructure Waterproofing &amp; Services</title>
     <meta name="description" content="Explore career opportunities at J.E. Infrastructure Waterproofing &amp; Services. Join Nepal's trusted construction company and grow with us.">
     <link rel="icon" type="image/png" href="assets/favicon.png">
-    <link rel="stylesheet" href="css/styles.css?v=8">
+    <link rel="stylesheet" href="css/styles.css?v=9">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -30,8 +30,8 @@
                 <p class="vacancies-hero-desc">Join Nepal's trusted construction and waterproofing company. We value expertise, commitment, and a passion for quality work. Explore our open positions below.</p>
                 <div class="vacancies-hero-stats">
                     <div class="vacancies-hero-stat">
-                        <div class="stat-val">1</div>
-                        <div class="stat-lbl">Open Position</div>
+                        <div class="stat-val">0</div>
+                        <div class="stat-lbl">Open Positions</div>
                     </div>
                     <div class="vacancies-hero-stat-divider"></div>
                     <div class="vacancies-hero-stat">
@@ -52,34 +52,34 @@
             <div class="vacancies-section-header">
                 <div class="section-eyebrow">Open Positions</div>
                 <h2>Current Vacancies</h2>
-                <p class="section-sub">We're actively looking for talented professionals to join our growing team. Apply today and grow your career with one of Nepal's leading construction companies.</p>
+                <p class="section-sub">We currently have no open positions. Check back soon or send us a general application &mdash; we'd love to hear from you.</p>
             </div>
 
-            <div class="vacancies-grid vacancies-grid--single">
+            <!-- No openings notice -->
+            <div class="vacancies-no-openings">
+                <div class="vacancies-no-openings-icon"><i class="fas fa-briefcase"></i></div>
+                <h3>No Openings at the Moment</h3>
+                <p>We're not actively hiring right now, but we're always growing. Leave your CV with us and we'll reach out when a suitable role opens up.</p>
+            </div>
 
-                <!-- Intern Civil Engineer -->
-                <div class="vacancy-card">
-                    <div class="vacancy-card-top">
-                        <div class="vacancy-icon"><i class="fas fa-drafting-compass"></i></div>
-                        <span class="vacancy-badge intern">Internship</span>
-                    </div>
-                    <h3>Intern Civil Engineer</h3>
-                    <div class="vacancy-meta">
-                        <span><i class="fas fa-building"></i> Engineering</span>
-                        <span><i class="fas fa-map-marker-alt"></i> Lalitpur, Nepal</span>
-                    </div>
-                    <p class="vacancy-desc">A hands-on internship opportunity for civil engineering students in their final semester or awaiting results. Work directly on active construction sites under the guidance of our senior engineers and gain real-world experience in construction management.</p>
-                    <ul class="vacancy-requirements">
-                        <li>Final semester student or result awaiting &mdash; Bachelor's in Civil Engineering</li>
-                        <li>Knowledge of site construction management practices</li>
-                        <li>Basic understanding of structural analysis concepts</li>
-                        <li>Basic proficiency in AutoCAD and SketchUp</li>
-                    </ul>
-                    <button class="vacancy-apply-btn" onclick="openApplicationModal('Intern Civil Engineer')">
-                        Apply Now <i class="fas fa-arrow-right"></i>
-                    </button>
+            <!-- Thank you card for Intern Engineer applicants -->
+            <div class="vacancy-thankyou-card">
+                <div class="vacancy-thankyou-top">
+                    <div class="vacancy-icon"><i class="fas fa-drafting-compass"></i></div>
+                    <span class="vacancy-badge closed">Position Closed</span>
                 </div>
-
+                <h3>Intern Civil Engineer</h3>
+                <div class="vacancy-meta">
+                    <span><i class="fas fa-building"></i> Engineering</span>
+                    <span><i class="fas fa-map-marker-alt"></i> Lalitpur, Nepal</span>
+                </div>
+                <div class="vacancy-thankyou-msg">
+                    <div class="vacancy-thankyou-msg-icon"><i class="fas fa-heart"></i></div>
+                    <div>
+                        <strong>Thank you to everyone who applied!</strong>
+                        <p>We have received your applications for the Intern Civil Engineer position and we truly appreciate your interest in joining JEIWS. Our team is currently reviewing all submissions and will reach out to shortlisted candidates within the coming days. We wish you all the very best.</p>
+                    </div>
+                </div>
             </div>
 
             <!-- General Application CTA -->
@@ -258,6 +258,7 @@
                 });
         });
     </script>
+    <script src="src/js/analytics.js"></script>
 </body>
 </html>
 

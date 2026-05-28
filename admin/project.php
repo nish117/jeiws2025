@@ -37,6 +37,7 @@ $p = $isNew
     JEIWS <span>CMS</span>
   </a>
   <div class="cms-nav-right">
+    <a href="analytics.php">Analytics</a>
     <a href="../index.html" target="_blank">← View Site</a>
     <a href="logout.php" class="btn-logout">Logout</a>
   </div>

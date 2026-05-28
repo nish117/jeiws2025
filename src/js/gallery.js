@@ -1,7 +1,7 @@
 const { projects } = await import('./projects.js?v=' + Date.now());
 
 const urlParams = new URLSearchParams(window.location.search);
-const projectId = parseInt(urlParams.get('id'));
+const projectId = urlParams.get('id') ?? '';
 const project = projects.find(p => p.id === projectId);
 
 const galleryGrid = document.getElementById('gallery-grid');

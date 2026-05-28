@@ -1253,7 +1253,18 @@ footer p{line-height:1.8;margin:0}
 .vacancy-badge.full-time{background:rgba(240,160,48,0.12);color:var(--gold-dim);border:1px solid rgba(240,160,48,0.25)}
 .vacancy-badge.contract{background:rgba(27,103,153,0.1);color:var(--blue);border:1px solid rgba(27,103,153,0.2)}
 .vacancy-badge.intern{background:rgba(34,153,102,0.1);color:#1a9966;border:1px solid rgba(34,153,102,0.25)}
+.vacancy-badge.closed{background:rgba(150,150,150,0.1);color:#888;border:1px solid rgba(150,150,150,0.25)}
 .vacancies-grid--single{grid-template-columns:minmax(320px,480px);justify-content:center}
+.vacancies-no-openings{text-align:center;padding:56px 24px 40px;max-width:520px;margin:0 auto}
+.vacancies-no-openings-icon{width:72px;height:72px;background:var(--blue-pale);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:var(--blue);font-size:28px}
+.vacancies-no-openings h3{font-family:'Sora',sans-serif;font-size:1.25rem;font-weight:700;color:var(--ink);margin:0 0 10px}
+.vacancies-no-openings p{font-size:15px;color:var(--muted);line-height:1.7;margin:0}
+.vacancy-thankyou-card{background:var(--bg);border-radius:var(--rl);border:1px solid var(--rule);box-shadow:var(--s1);padding:32px 28px;max-width:600px;margin:8px auto 48px;opacity:.9}
+.vacancy-thankyou-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.vacancy-thankyou-msg{display:flex;align-items:flex-start;gap:14px;background:linear-gradient(135deg,rgba(27,103,153,0.06),rgba(27,103,153,0.02));border:1px solid rgba(27,103,153,0.12);border-radius:10px;padding:18px 20px;margin-top:20px}
+.vacancy-thankyou-msg-icon{width:36px;height:36px;background:rgba(27,103,153,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:15px;flex-shrink:0;margin-top:2px}
+.vacancy-thankyou-msg strong{display:block;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.vacancy-thankyou-msg p{font-size:14px;color:var(--muted);line-height:1.65;margin:0}
 .vacancy-card h3{font-family:'Sora',sans-serif;font-size:1.15rem;font-weight:700;color:var(--ink);margin:0 0 10px}
 .vacancy-meta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
 .vacancy-meta span{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:5px}

@@ -39,7 +39,7 @@ function regenerateJs(array $projects): void {
         $trailingP = $i < $last ? ',' : '';
 
         $out .= "    {\n";
-        $out .= "        id: " . intval($p['id']) . ",\n";
+        $out .= "        id: " . json_encode((string)($p['id'] ?? ''), JSON_HEX_TAG) . ",\n";
         // JSON_HEX_TAG prevents </script> injection when values land inside a <script> block
         $out .= "        title: "       . json_encode((string)($p['title']       ?? ''), JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) . ",\n";
         $out .= "        description: " . json_encode((string)($p['description'] ?? ''), JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) . ",\n";
@@ -84,10 +84,10 @@ function initFromJs(): void {
 
 // ── Helpers ─────────────────────────────────────────────
 
-// Validate and return an 8-char hex project ID, or '' if invalid
+// Validate and return a project ID (8-char hex, or 8-char hex + underscore suffix), or '' if invalid
 function parseId(string $raw): string {
     $s = trim($raw);
-    return preg_match('/^[a-f0-9]{8}$/', $s) ? $s : '';
+    return preg_match('/^[a-f0-9]{8}(_[a-zA-Z0-9]+)?$/', $s) ? $s : '';
 }
 
 // Generate a unique random 8-char hex ID not already in use
