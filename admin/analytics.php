@@ -6,43 +6,51 @@ if (!file_exists($credFile) || !isset($_SESSION['cms_auth'])) {
     header('Location: login.php'); exit;
 }
 
-// ── Date range ───────────────────────────────────────────
+// ── Date range ───────────────────────────────────────────────────────────────
 $range   = $_GET['range'] ?? '7d';
 $allowed = ['today' => 0, '7d' => 6, '30d' => 29, 'all' => 36500];
 if (!array_key_exists($range, $allowed)) $range = '7d';
 $daysBack = $allowed[$range];
 $cutoff   = date('Y-m-d', strtotime("-{$daysBack} days"));
+$prevCutoff = $range !== 'all'
+    ? date('Y-m-d', strtotime('-' . ($daysBack * 2 + 1) . ' days'))
+    : '';
 
-// ── Read log ─────────────────────────────────────────────
+// ── Read log (single pass, split into current + previous periods) ────────────
 $logFile = __DIR__ . '/../data/analytics.log';
 $entries = [];
+$prevEntries = [];
 if (file_exists($logFile)) {
     $fh = fopen($logFile, 'r');
     while (($line = fgets($fh)) !== false) {
         $e = json_decode(trim($line), true);
         if (!is_array($e)) continue;
-        if ($range !== 'all' && ($e['date'] ?? '') < $cutoff) continue;
+        $d = $e['date'] ?? '';
+        if ($range !== 'all' && $d < $cutoff) {
+            if ($prevCutoff && $d >= $prevCutoff) $prevEntries[] = $e;
+            continue;
+        }
         $entries[] = $e;
     }
     fclose($fh);
 }
 
-// ── UA parsers ───────────────────────────────────────────
+// ── UA parsers ───────────────────────────────────────────────────────────────
 function parseBrowser(string $ua): string {
-    if (stripos($ua, 'EdgA/')  !== false || stripos($ua, 'Edg/') !== false) return 'Edge';
-    if (stripos($ua, 'OPR/')   !== false || stripos($ua, 'Opera') !== false) return 'Opera';
-    if (stripos($ua, 'Firefox') !== false) return 'Firefox';
+    if (stripos($ua, 'EdgA/') !== false || stripos($ua, 'Edg/') !== false) return 'Edge';
+    if (stripos($ua, 'OPR/')  !== false || stripos($ua, 'Opera') !== false) return 'Opera';
+    if (stripos($ua, 'Firefox') !== false)       return 'Firefox';
     if (stripos($ua, 'SamsungBrowser') !== false) return 'Samsung';
-    if (stripos($ua, 'Chrome') !== false) return 'Chrome';
-    if (stripos($ua, 'Safari') !== false) return 'Safari';
+    if (stripos($ua, 'Chrome') !== false)        return 'Chrome';
+    if (stripos($ua, 'Safari') !== false)        return 'Safari';
     return 'Other';
 }
 function parseOS(string $ua): string {
-    if (stripos($ua, 'Android') !== false) return 'Android';
+    if (stripos($ua, 'Android') !== false)  return 'Android';
     if (stripos($ua, 'iPhone') !== false || stripos($ua, 'iPad') !== false) return 'iOS';
-    if (stripos($ua, 'Windows') !== false) return 'Windows';
+    if (stripos($ua, 'Windows') !== false)  return 'Windows';
     if (stripos($ua, 'Macintosh') !== false || stripos($ua, 'Mac OS') !== false) return 'macOS';
-    if (stripos($ua, 'Linux') !== false) return 'Linux';
+    if (stripos($ua, 'Linux') !== false)    return 'Linux';
     return 'Other';
 }
 function parseDevice(string $ua, string $vp): string {
@@ -55,37 +63,23 @@ function parseDevice(string $ua, string $vp): string {
 function refDomain(string $ref): string {
     if (!$ref) return '(direct)';
     $host = parse_url($ref, PHP_URL_HOST) ?: $ref;
-    $host = preg_replace('/^www\./', '', strtolower($host));
-    return $host ?: '(direct)';
+    return preg_replace('/^www\./', '', strtolower($host)) ?: '(direct)';
 }
 
-// ── Aggregate ────────────────────────────────────────────
-$totalViews  = count($entries);
-$uniqueVids  = [];
-$uniqueSids  = [];
-$pageCounts  = [];
-$browserCts  = [];
-$osCts       = [];
-$deviceCts   = [];
-$refCts      = [];
-$dailyCts    = [];
-$loadTimes   = [];
+// ── Aggregate current period ─────────────────────────────────────────────────
+$uniqueVids = $uniqueSids = $pageCounts = $browserCts = $osCts = $deviceCts = $refCts = $dailyCts = $loadTimes = [];
+$hourlyCts  = array_fill(0, 24, 0);
 
 foreach ($entries as $e) {
-    $vid = $e['vid'] ?? '';
-    $sid = $e['sid'] ?? '';
+    $vid = $e['vid'] ?? ''; $sid = $e['sid'] ?? '';
     if ($vid) $uniqueVids[$vid] = true;
     if ($sid) $uniqueSids[$sid] = true;
 
-    $path = $e['path'] ?? '/';
-    if (!$path) $path = '/';
+    $path = $e['path'] ?: '/';
     $pageCounts[$path] = ($pageCounts[$path] ?? 0) + 1;
 
-    $ua  = $e['ua']  ?? '';
-    $vp  = $e['vp']  ?? '';
-    $b   = parseBrowser($ua);
-    $os  = parseOS($ua);
-    $dev = parseDevice($ua, $vp);
+    $ua = $e['ua'] ?? ''; $vp = $e['vp'] ?? '';
+    $b = parseBrowser($ua); $os = parseOS($ua); $dev = parseDevice($ua, $vp);
     $browserCts[$b]  = ($browserCts[$b]  ?? 0) + 1;
     $osCts[$os]      = ($osCts[$os]      ?? 0) + 1;
     $deviceCts[$dev] = ($deviceCts[$dev] ?? 0) + 1;
@@ -96,39 +90,62 @@ foreach ($entries as $e) {
     $date = $e['date'] ?? '';
     if ($date) $dailyCts[$date] = ($dailyCts[$date] ?? 0) + 1;
 
+    if (!empty($e['time'])) $hourlyCts[(int)substr($e['time'], 0, 2)]++;
+
     $ms = (int)($e['load_ms'] ?? 0);
     if ($ms > 0 && $ms < 60000) $loadTimes[] = $ms;
 }
 
-arsort($pageCounts);
-arsort($browserCts);
-arsort($osCts);
-arsort($deviceCts);
-arsort($refCts);
-ksort($dailyCts);
+arsort($pageCounts); arsort($browserCts); arsort($osCts);
+arsort($deviceCts);  arsort($refCts);     ksort($dailyCts);
 
+$totalViews     = count($entries);
 $uniqueVisitors = count($uniqueVids);
 $uniqueSessions = count($uniqueSids);
-$avgLoad = $loadTimes ? round(array_sum($loadTimes) / count($loadTimes) / 1000, 2) : 0;
+$avgLoad        = $loadTimes ? round(array_sum($loadTimes) / count($loadTimes) / 1000, 2) : 0;
 
-// Build full date series for chart (fill gaps with 0)
+// ── Aggregate previous period (for trends) ───────────────────────────────────
+$prevViews = count($prevEntries);
+$prevVids  = [];
+foreach ($prevEntries as $pe) { $v = $pe['vid'] ?? ''; if ($v) $prevVids[$v] = true; }
+$prevVisitors = count($prevVids);
+
+function trendPct(int $curr, int $prev): ?int {
+    return $prev > 0 ? (int)round(($curr - $prev) / $prev * 100) : null;
+}
+
+// ── Chart data ───────────────────────────────────────────────────────────────
 $chartDays = ($range === 'all' || $daysBack > 30) ? 30 : ($daysBack + 1);
 $chartSeries = [];
 for ($i = $chartDays - 1; $i >= 0; $i--) {
     $d = date('Y-m-d', strtotime("-{$i} days"));
     $chartSeries[$d] = $dailyCts[$d] ?? 0;
 }
-$chartMax = max(1, max($chartSeries));
 
-// Recent entries (last 50, newest first)
-$recent = array_slice(array_reverse($entries), 0, 50);
-
-// Helper to render a % bar
-function pct(int $n, int $total): string {
-    return $total ? round($n / $total * 100) . '%' : '0%';
+// For "today" use hourly labels
+$isToday = ($range === 'today');
+if ($isToday) {
+    $chartLabels = array_map(fn($h) => sprintf('%02d:00', $h), range(0, 23));
+    $chartData   = array_values($hourlyCts);
+} else {
+    $chartLabels = array_map(fn($d) => date('M j', strtotime($d)), array_keys($chartSeries));
+    $chartData   = array_values($chartSeries);
 }
 
+$topPages  = array_slice($pageCounts, 0, 8, true);
+$topRef    = array_slice($refCts, 0, 7, true);
+$recent    = array_slice(array_reverse($entries), 0, 50);
+
 $rangeLabels = ['today' => 'Today', '7d' => 'Last 7 days', '30d' => 'Last 30 days', 'all' => 'All time'];
+
+// Bounce rate: sessions with only 1 pageview
+$sessionPageCount = [];
+foreach ($entries as $e) {
+    $sid = $e['sid'] ?? 'x';
+    $sessionPageCount[$sid] = ($sessionPageCount[$sid] ?? 0) + 1;
+}
+$bounced = count(array_filter($sessionPageCount, fn($c) => $c === 1));
+$bounceRate = $uniqueSessions > 0 ? round($bounced / $uniqueSessions * 100) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -137,63 +154,90 @@ $rangeLabels = ['today' => 'Today', '7d' => 'Last 7 days', '30d' => 'Last 30 day
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Analytics — JEIWS CMS</title>
 <link rel="stylesheet" href="cms.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-/* ── Analytics-specific styles ─────────────── */
+/* ── Base ─────────────────────────────────────────────── */
+body{background:#f0f4f8}
+.an-wrap{max-width:1300px;margin:0 auto;padding:0 0 60px}
+
+/* ── Range bar ────────────────────────────────────────── */
 .an-range-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px}
-.an-range-btn{padding:6px 16px;border-radius:20px;border:1.5px solid #c8d8e4;background:#fff;
-  color:#3a5a72;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:.15s}
+.an-range-btn{padding:7px 18px;border-radius:20px;border:1.5px solid #c8d8e4;background:#fff;
+  color:#3a5a72;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;
+  transition:all .15s;line-height:1}
 .an-range-btn:hover{border-color:#1b6799;color:#1b6799}
 .an-range-btn.active{background:#1b6799;border-color:#1b6799;color:#fff}
 
-.an-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:28px}
-.an-stat{background:#fff;border-radius:10px;padding:20px 20px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.an-stat-num{font-size:2rem;font-weight:800;color:#0c1e2d;line-height:1}
-.an-stat-lbl{font-size:12px;color:#6b849a;font-weight:600;margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+/* ── Stat cards ───────────────────────────────────────── */
+.an-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.an-stat{background:#fff;border-radius:12px;padding:22px 20px 18px;
+  box-shadow:0 1px 4px rgba(0,0,0,.07);position:relative;overflow:hidden}
+.an-stat::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#1b6799,#2a9d8f)}
+.an-stat-num{font-size:2.1rem;font-weight:800;color:#0c1e2d;line-height:1;letter-spacing:-1px}
+.an-stat-lbl{font-size:11px;color:#6b849a;font-weight:700;margin-top:6px;
+  text-transform:uppercase;letter-spacing:.6px}
+.an-stat-trend{display:inline-flex;align-items:center;gap:3px;margin-top:8px;
+  font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px}
+.an-stat-trend.up{background:#e8f7ef;color:#1a9966}
+.an-stat-trend.down{background:#fde8e8;color:#c0392b}
+.an-stat-trend.neu{background:#f0f4f8;color:#6b849a}
 
-.an-grid{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px}
-@media(max-width:900px){.an-grid{grid-template-columns:1fr}}
+/* ── Cards ────────────────────────────────────────────── */
+.an-card{background:#fff;border-radius:12px;padding:22px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.an-card-hdr{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #edf2f7}
+.an-card-title{font-size:13px;font-weight:700;color:#3a5a72;
+  text-transform:uppercase;letter-spacing:.5px;margin:0}
+.an-card-sub{font-size:11px;color:#8fa5b5}
 
-.an-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.an-card-title{font-size:13px;font-weight:700;color:#3a5a72;text-transform:uppercase;
-  letter-spacing:.5px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #e4ecf2}
+/* ── Layout grids ─────────────────────────────────────── */
+.an-row-2{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px}
+.an-row-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:20px}
+.an-row-2b{display:grid;grid-template-columns:1fr 2fr;gap:20px;margin-bottom:20px}
+@media(max-width:1024px){.an-row-2,.an-row-2b{grid-template-columns:1fr}}
+@media(max-width:760px){.an-row-3{grid-template-columns:1fr}}
 
-/* Bar chart */
-.an-chart{display:flex;align-items:flex-end;gap:4px;height:120px;padding-bottom:24px;position:relative}
-.an-chart-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
-.an-bar{width:100%;background:#1b6799;border-radius:4px 4px 0 0;min-height:2px;transition:.2s}
-.an-bar:hover{background:#145d88}
-.an-bar-lbl{font-size:9px;color:#8fa5b5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:100%;text-align:center;transform:rotate(-45deg);transform-origin:top left;
-  position:absolute;bottom:0;margin-left:2px}
+/* ── Chart canvases ───────────────────────────────────── */
+.an-chart-wrap{position:relative;height:260px}
+.an-donut-wrap{position:relative;height:220px}
 
-/* Stat rows */
-.an-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f4f8;font-size:13px}
-.an-row:last-child{border:none}
-.an-row-label{flex:1;color:#1a2b3c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.an-row-count{font-weight:700;color:#1b6799;min-width:36px;text-align:right}
-.an-row-bar-wrap{width:90px;height:6px;background:#e4ecf2;border-radius:3px;overflow:hidden}
-.an-row-bar{height:100%;background:#1b6799;border-radius:3px}
+/* ── Horizontal bar rows ──────────────────────────────── */
+.an-hrow{padding:9px 0;border-bottom:1px solid #f0f4f8;display:flex;align-items:center;gap:10px;font-size:13px}
+.an-hrow:last-child{border:none;padding-bottom:0}
+.an-hrow-rank{font-size:11px;font-weight:700;color:#b0bec5;min-width:18px;text-align:center}
+.an-hrow-label{flex:1;color:#1a2b3c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  min-width:0;font-weight:500}
+.an-hrow-bar-bg{width:80px;height:6px;background:#e8f0f6;border-radius:3px;overflow:hidden;flex-shrink:0}
+.an-hrow-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#1b6799,#2a9d8f)}
+.an-hrow-count{font-weight:700;color:#1b6799;min-width:28px;text-align:right;font-size:13px}
+.an-hrow-pct{font-size:11px;color:#8fa5b5;min-width:32px;text-align:right}
 
-/* Recent table */
-.an-table{width:100%;border-collapse:collapse;font-size:12px}
-.an-table th{text-align:left;padding:8px 10px;background:#f0f4f8;color:#6b849a;
-  font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #dde8f0}
-.an-table td{padding:8px 10px;border-bottom:1px solid #f0f4f8;color:#1a2b3c;
-  max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ── Recent table ─────────────────────────────────────── */
+.an-table-wrap{overflow-x:auto}
+.an-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
+.an-table th{text-align:left;padding:9px 12px;background:#f6f9fc;color:#6b849a;
+  font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e4ecf4;
+  white-space:nowrap}
+.an-table td{padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#1a2b3c;
+  max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .an-table tr:hover td{background:#f8fafc}
 .an-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
-.an-badge-m{background:#e0f0ff;color:#1b6799}
-.an-badge-d{background:#e8f4e8;color:#2a7a3a}
-.an-badge-t{background:#fff3e0;color:#c06000}
-.an-empty{text-align:center;padding:40px;color:#8fa5b5;font-size:14px}
+.an-badge-m{background:#dbeafe;color:#1b6799}
+.an-badge-d{background:#dcfce7;color:#166534}
+.an-badge-t{background:#fef3c7;color:#92400e}
+
+/* ── Empty state ──────────────────────────────────────── */
+.an-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:48px 24px;color:#8fa5b5;font-size:14px;gap:10px;text-align:center}
+.an-empty-icon{font-size:36px;opacity:.4}
 </style>
 </head>
 <body>
 
 <nav class="cms-nav">
   <a href="index.php" class="cms-brand">
-    <img src="../assets/logo.png" alt="">
-    JEIWS <span>CMS</span>
+    <img src="../assets/logo.png" alt="">JEIWS <span>CMS</span>
   </a>
   <div class="cms-nav-right">
     <a href="analytics.php" style="color:#F0A030;font-weight:700">Analytics</a>
@@ -203,205 +247,332 @@ $rangeLabels = ['today' => 'Today', '7d' => 'Last 7 days', '30d' => 'Last 30 day
 </nav>
 
 <main class="cms-main">
+<div class="an-wrap">
+
   <div class="page-hdr">
     <div>
       <h1>Analytics</h1>
-      <p><?= htmlspecialchars($rangeLabels[$range]) ?> &middot; <?= $totalViews ?> page view<?= $totalViews !== 1 ? 's' : '' ?></p>
+      <p><?= htmlspecialchars($rangeLabels[$range]) ?> &middot; <?= number_format($totalViews) ?> page view<?= $totalViews !== 1 ? 's' : '' ?></p>
     </div>
   </div>
 
   <!-- Range selector -->
   <div class="an-range-bar">
-    <?php foreach ($rangeLabels as $key => $label): ?>
-    <a href="?range=<?= $key ?>"
-       class="an-range-btn <?= $range === $key ? 'active' : '' ?>">
-      <?= $label ?>
-    </a>
+    <?php foreach ($rangeLabels as $key => $lbl): ?>
+    <a href="?range=<?= $key ?>" class="an-range-btn <?= $range === $key ? 'active' : '' ?>"><?= $lbl ?></a>
     <?php endforeach ?>
   </div>
 
-  <!-- Summary stats -->
+  <!-- ── Stat cards ────────────────────────────────────── -->
   <div class="an-stats">
-    <div class="an-stat">
-      <div class="an-stat-num"><?= number_format($totalViews) ?></div>
-      <div class="an-stat-lbl">Page Views</div>
-    </div>
-    <div class="an-stat">
-      <div class="an-stat-num"><?= number_format($uniqueVisitors) ?></div>
-      <div class="an-stat-lbl">Unique Visitors</div>
-    </div>
-    <div class="an-stat">
-      <div class="an-stat-num"><?= number_format($uniqueSessions) ?></div>
-      <div class="an-stat-lbl">Sessions</div>
-    </div>
-    <div class="an-stat">
-      <div class="an-stat-num"><?= $avgLoad > 0 ? $avgLoad . 's' : '—' ?></div>
-      <div class="an-stat-lbl">Avg Load Time</div>
-    </div>
+    <?php
+    function statCard(string $num, string $label, ?int $trendPct, string $icon): void {
+        echo "<div class='an-stat'>";
+        echo "<div class='an-stat-num'>$icon $num</div>";
+        echo "<div class='an-stat-lbl'>$label</div>";
+        if ($trendPct !== null) {
+            $cls  = $trendPct > 0 ? 'up' : ($trendPct < 0 ? 'down' : 'neu');
+            $arr  = $trendPct > 0 ? '↑' : ($trendPct < 0 ? '↓' : '→');
+            $abs  = abs($trendPct);
+            echo "<div class='an-stat-trend $cls'>$arr $abs% vs prev</div>";
+        }
+        echo "</div>";
+    }
+    statCard(number_format($totalViews),     'Page Views',       trendPct($totalViews, $prevViews),         '📄');
+    statCard(number_format($uniqueVisitors), 'Unique Visitors',  trendPct($uniqueVisitors, $prevVisitors),  '👥');
+    statCard(number_format($uniqueSessions), 'Sessions',         null,                                      '🔄');
+    statCard($bounceRate . '%',              'Bounce Rate',      null,                                      '↩');
+    statCard($avgLoad > 0 ? $avgLoad . 's' : '—', 'Avg Load Time', null,                                   '⚡');
+    ?>
   </div>
 
   <?php if ($totalViews === 0): ?>
-  <div class="an-empty">No data recorded yet for this period.<br>
-    Make sure <code>analytics.js</code> is loaded on your public pages.</div>
+  <div class="an-card">
+    <div class="an-empty">
+      <div class="an-empty-icon">📊</div>
+      <strong>No data for this period</strong>
+      <span>Visits will appear here once <code>analytics.js</code> is active on your pages.</span>
+    </div>
+  </div>
   <?php else: ?>
 
-  <!-- Daily chart + Top pages -->
-  <div class="an-grid">
+  <!-- ── Line chart + Devices doughnut ─────────────────── -->
+  <div class="an-row-2">
 
-    <!-- Daily visits chart -->
     <div class="an-card">
-      <div class="an-card-title">Daily Page Views</div>
-      <div class="an-chart">
-        <?php foreach ($chartSeries as $day => $count): ?>
-        <div class="an-chart-wrap" style="position:relative">
-          <div class="an-bar"
-               style="height:<?= round($count / $chartMax * 100) ?>%"
-               title="<?= $day ?>: <?= $count ?> view<?= $count !== 1 ? 's' : '' ?>">
-          </div>
-          <span class="an-bar-lbl"><?= date('M j', strtotime($day)) ?></span>
-        </div>
+      <div class="an-card-hdr">
+        <span class="an-card-title"><?= $isToday ? 'Hourly Traffic — Today' : 'Daily Page Views' ?></span>
+        <span class="an-card-sub">Total: <?= number_format($totalViews) ?></span>
+      </div>
+      <div class="an-chart-wrap">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+
+    <div class="an-card">
+      <div class="an-card-hdr">
+        <span class="an-card-title">Devices</span>
+        <span class="an-card-sub"><?= number_format($totalViews) ?> views</span>
+      </div>
+      <div class="an-donut-wrap">
+        <canvas id="deviceChart"></canvas>
+      </div>
+      <!-- Legend row below chart -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:center">
+        <?php
+        $devColors = ['Desktop' => '#1b6799', 'Mobile' => '#F0A030', 'Tablet' => '#2a9d8f'];
+        foreach ($deviceCts as $dev => $cnt):
+          $pct = $totalViews ? round($cnt / $totalViews * 100) : 0;
+          $col = $devColors[$dev] ?? '#888';
+        ?>
+        <span style="font-size:12px;display:flex;align-items:center;gap:5px">
+          <span style="width:10px;height:10px;border-radius:2px;background:<?= $col ?>;flex-shrink:0"></span>
+          <?= htmlspecialchars($dev) ?> <strong><?= $pct ?>%</strong>
+        </span>
         <?php endforeach ?>
       </div>
     </div>
-
-    <!-- Top pages -->
-    <div class="an-card">
-      <div class="an-card-title">Top Pages</div>
-      <?php if (empty($pageCounts)): ?>
-        <div class="an-empty">No data</div>
-      <?php else:
-        $topPages = array_slice($pageCounts, 0, 8, true);
-        $maxPage  = max($topPages);
-        foreach ($topPages as $path => $cnt): ?>
-      <div class="an-row">
-        <span class="an-row-label" title="<?= htmlspecialchars($path) ?>">
-          <?= htmlspecialchars($path) ?>
-        </span>
-        <div class="an-row-bar-wrap">
-          <div class="an-row-bar" style="width:<?= pct($cnt, $maxPage) ?>"></div>
-        </div>
-        <span class="an-row-count"><?= $cnt ?></span>
-      </div>
-      <?php endforeach; endif ?>
-    </div>
   </div>
 
-  <!-- Browsers / Devices / OS / Referrers -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;margin-bottom:20px">
+  <!-- ── Browsers / OS / Top pages ─────────────────────── -->
+  <div class="an-row-3">
 
-    <!-- Browsers -->
     <div class="an-card">
-      <div class="an-card-title">Browsers</div>
-      <?php $maxB = max(1, max($browserCts)); foreach ($browserCts as $b => $cnt): ?>
-      <div class="an-row">
-        <span class="an-row-label"><?= htmlspecialchars($b) ?></span>
-        <div class="an-row-bar-wrap">
-          <div class="an-row-bar" style="width:<?= pct($cnt, $maxB) ?>"></div>
-        </div>
-        <span class="an-row-count"><?= $cnt ?></span>
+      <div class="an-card-hdr">
+        <span class="an-card-title">Browsers</span>
+        <span class="an-card-sub"><?= count($browserCts) ?> types</span>
       </div>
-      <?php endforeach ?>
+      <div class="an-donut-wrap">
+        <canvas id="browserChart"></canvas>
+      </div>
     </div>
 
-    <!-- Devices -->
     <div class="an-card">
-      <div class="an-card-title">Devices</div>
-      <?php $maxD = max(1, max($deviceCts)); foreach ($deviceCts as $dev => $cnt): ?>
-      <div class="an-row">
-        <span class="an-row-label"><?= htmlspecialchars($dev) ?></span>
-        <div class="an-row-bar-wrap">
-          <div class="an-row-bar" style="width:<?= pct($cnt, $maxD) ?>"></div>
-        </div>
-        <span class="an-row-count"><?= $cnt ?></span>
+      <div class="an-card-hdr">
+        <span class="an-card-title">Operating Systems</span>
+        <span class="an-card-sub"><?= count($osCts) ?> types</span>
       </div>
-      <?php endforeach ?>
+      <div class="an-donut-wrap">
+        <canvas id="osChart"></canvas>
+      </div>
     </div>
 
-    <!-- OS -->
     <div class="an-card">
-      <div class="an-card-title">Operating Systems</div>
-      <?php $maxO = max(1, max($osCts)); foreach ($osCts as $os => $cnt): ?>
-      <div class="an-row">
-        <span class="an-row-label"><?= htmlspecialchars($os) ?></span>
-        <div class="an-row-bar-wrap">
-          <div class="an-row-bar" style="width:<?= pct($cnt, $maxO) ?>"></div>
-        </div>
-        <span class="an-row-count"><?= $cnt ?></span>
+      <div class="an-card-hdr">
+        <span class="an-card-title">Top Pages</span>
+        <span class="an-card-sub"><?= count($pageCounts) ?> unique</span>
       </div>
-      <?php endforeach ?>
-    </div>
-
-    <!-- Referrers -->
-    <div class="an-card">
-      <div class="an-card-title">Top Referrers</div>
       <?php
-        $topRef = array_slice($refCts, 0, 8, true);
-        $maxR   = max(1, max($topRef));
-        foreach ($topRef as $dom => $cnt): ?>
-      <div class="an-row">
-        <span class="an-row-label" title="<?= htmlspecialchars($dom) ?>">
-          <?= htmlspecialchars($dom) ?>
-        </span>
-        <div class="an-row-bar-wrap">
-          <div class="an-row-bar" style="width:<?= pct($cnt, $maxR) ?>"></div>
-        </div>
-        <span class="an-row-count"><?= $cnt ?></span>
+      $maxPage = $topPages ? max($topPages) : 1;
+      $rank = 1;
+      foreach ($topPages as $path => $cnt):
+        $pct = $totalViews ? round($cnt / $totalViews * 100) : 0;
+        $barW = round($cnt / $maxPage * 100);
+      ?>
+      <div class="an-hrow">
+        <span class="an-hrow-rank"><?= $rank++ ?></span>
+        <span class="an-hrow-label" title="<?= htmlspecialchars($path) ?>"><?= htmlspecialchars($path) ?></span>
+        <div class="an-hrow-bar-bg"><div class="an-hrow-bar-fill" style="width:<?= $barW ?>%"></div></div>
+        <span class="an-hrow-count"><?= $cnt ?></span>
+        <span class="an-hrow-pct"><?= $pct ?>%</span>
       </div>
       <?php endforeach ?>
     </div>
 
   </div>
 
-  <!-- Recent visits table -->
-  <div class="an-card">
-    <div class="an-card-title">Recent Visits (last 50)</div>
-    <?php if (empty($recent)): ?>
-      <div class="an-empty">No visits recorded.</div>
-    <?php else: ?>
-    <div style="overflow-x:auto">
-    <table class="an-table">
-      <thead>
-        <tr>
-          <th>Date / Time</th>
-          <th>Page</th>
-          <th>Device</th>
-          <th>Browser</th>
-          <th>OS</th>
-          <th>Language</th>
-          <th>Timezone</th>
-          <th>Referrer</th>
-          <th>Load</th>
-          <th>Screen</th>
-        </tr>
-      </thead>
-      <tbody>
+  <!-- ── Referrers + Recent visits ─────────────────────── -->
+  <div class="an-row-2b">
+
+    <div class="an-card">
+      <div class="an-card-hdr">
+        <span class="an-card-title">Traffic Sources</span>
+        <span class="an-card-sub"><?= count($refCts) ?> sources</span>
+      </div>
+      <div class="an-donut-wrap" style="height:200px">
+        <canvas id="refChart"></canvas>
+      </div>
+      <div style="margin-top:16px">
+      <?php
+      $maxRef = $topRef ? max($topRef) : 1;
+      $rank = 1;
+      foreach ($topRef as $dom => $cnt):
+        $barW = round($cnt / $maxRef * 100);
+        $pct  = $totalViews ? round($cnt / $totalViews * 100) : 0;
+      ?>
+      <div class="an-hrow">
+        <span class="an-hrow-rank"><?= $rank++ ?></span>
+        <span class="an-hrow-label" title="<?= htmlspecialchars($dom) ?>"><?= htmlspecialchars($dom) ?></span>
+        <div class="an-hrow-bar-bg"><div class="an-hrow-bar-fill" style="width:<?= $barW ?>%"></div></div>
+        <span class="an-hrow-count"><?= $cnt ?></span>
+        <span class="an-hrow-pct"><?= $pct ?>%</span>
+      </div>
+      <?php endforeach ?>
+      </div>
+    </div>
+
+    <div class="an-card">
+      <div class="an-card-hdr">
+        <span class="an-card-title">Recent Visits</span>
+        <span class="an-card-sub">Last <?= min(50, count($entries)) ?> entries</span>
+      </div>
+      <div class="an-table-wrap">
+      <table class="an-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Page</th>
+            <th>Device</th>
+            <th>Browser</th>
+            <th>OS</th>
+            <th>Referrer</th>
+            <th>Load</th>
+            <th>Lang</th>
+          </tr>
+        </thead>
+        <tbody>
         <?php foreach ($recent as $e):
-          $ua  = $e['ua']   ?? '';
-          $vp  = $e['vp']   ?? '';
+          $ua  = $e['ua']  ?? '';
+          $vp  = $e['vp']  ?? '';
           $dev = parseDevice($ua, $vp);
-          $devClass = ['Mobile' => 'an-badge-m', 'Tablet' => 'an-badge-t', 'Desktop' => 'an-badge-d'][$dev] ?? '';
+          $cls = ['Mobile' => 'an-badge-m', 'Tablet' => 'an-badge-t', 'Desktop' => 'an-badge-d'][$dev] ?? '';
           $ms  = (int)($e['load_ms'] ?? 0);
         ?>
         <tr>
-          <td><?= htmlspecialchars(($e['date'] ?? '') . ' ' . ($e['time'] ?? '')) ?></td>
+          <td title="<?= htmlspecialchars(($e['date'] ?? '') . ' ' . ($e['time'] ?? '')) ?>">
+            <?= htmlspecialchars($e['date'] ?? '') ?> <?= htmlspecialchars($e['time'] ?? '') ?>
+          </td>
           <td title="<?= htmlspecialchars($e['path'] ?? '') ?>"><?= htmlspecialchars($e['path'] ?? '') ?></td>
-          <td><span class="an-badge <?= $devClass ?>"><?= $dev ?></span></td>
+          <td><span class="an-badge <?= $cls ?>"><?= $dev ?></span></td>
           <td><?= htmlspecialchars(parseBrowser($ua)) ?></td>
           <td><?= htmlspecialchars(parseOS($ua)) ?></td>
-          <td><?= htmlspecialchars($e['lang'] ?? '') ?></td>
-          <td><?= htmlspecialchars($e['tz']   ?? '') ?></td>
           <td title="<?= htmlspecialchars($e['ref'] ?? '') ?>"><?= htmlspecialchars(refDomain($e['ref'] ?? '')) ?></td>
           <td><?= $ms > 0 ? round($ms / 1000, 1) . 's' : '—' ?></td>
-          <td><?= htmlspecialchars($e['screen'] ?? '') ?></td>
+          <td><?= htmlspecialchars($e['lang'] ?? '') ?></td>
         </tr>
         <?php endforeach ?>
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+      </div>
     </div>
-    <?php endif ?>
-  </div>
 
+  </div>
   <?php endif ?>
+
+</div><!-- /an-wrap -->
 </main>
+
+<script>
+// ── Shared config ────────────────────────────────────────
+const PALETTE  = ['#1b6799','#F0A030','#2a9d8f','#e76f51','#8338ec','#3a86ff','#06d6a0','#ef476f'];
+const FONT     = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.family = FONT;
+Chart.defaults.color       = '#6b849a';
+
+function donut(id, labels, data) {
+    const total = data.reduce((a,b) => a+b, 0);
+    new Chart(document.getElementById(id), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data,
+                backgroundColor: PALETTE.slice(0, labels.length),
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 10,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '66%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font:{size:12}, padding:10, boxWidth:11, boxHeight:11, usePointStyle:true }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const pct = total > 0 ? Math.round(ctx.parsed / total * 100) : 0;
+                            return `  ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ── Line / area chart ────────────────────────────────────
+(function() {
+    const labels = <?= json_encode($chartLabels) ?>;
+    const data   = <?= json_encode($chartData) ?>;
+    const ctx    = document.getElementById('lineChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Page Views',
+                data,
+                fill: true,
+                backgroundColor: function(ctx) {
+                    const canvas = ctx.chart.ctx;
+                    const grad = canvas.createLinearGradient(0, 0, 0, 240);
+                    grad.addColorStop(0, 'rgba(27,103,153,0.25)');
+                    grad.addColorStop(1, 'rgba(27,103,153,0)');
+                    return grad;
+                },
+                borderColor: '#1b6799',
+                borderWidth: 2.5,
+                tension: 0.4,
+                pointRadius: data.length > 20 ? 2 : 4,
+                pointBackgroundColor: '#1b6799',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1.5,
+                pointHoverRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0c1e2d',
+                    padding: 10,
+                    titleFont: { size: 12, weight: '700' },
+                    bodyFont:  { size: 13 },
+                    callbacks: {
+                        label: ctx => `  ${ctx.parsed.y} view${ctx.parsed.y !== 1 ? 's' : ''}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 }, maxTicksLimit: 10 }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.04)' },
+                    ticks: { font: { size: 11 }, precision: 0 }
+                }
+            }
+        }
+    });
+})();
+
+// ── Doughnut charts ──────────────────────────────────────
+donut('deviceChart',  <?= json_encode(array_keys($deviceCts)) ?>,  <?= json_encode(array_values($deviceCts)) ?>);
+donut('browserChart', <?= json_encode(array_keys($browserCts)) ?>, <?= json_encode(array_values($browserCts)) ?>);
+donut('osChart',      <?= json_encode(array_keys($osCts)) ?>,      <?= json_encode(array_values($osCts)) ?>);
+donut('refChart',     <?= json_encode(array_keys($topRef)) ?>,     <?= json_encode(array_values($topRef)) ?>);
+</script>
 </body>
 </html>

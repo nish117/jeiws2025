@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /data/
+Disallow: /config/
+Disallow: /analytics.php
+Disallow: /send_email.php
+Disallow: /send_application.php
+
+Sitemap: https://jeiws.com/sitemap.xml
