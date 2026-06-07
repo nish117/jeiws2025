@@ -43,6 +43,14 @@ FileETag MTime Size
     Header set X-XSS-Protection "1; mode=block"
 </IfModule>
 
+# Block direct hotlinking of project images from outside the domain
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_REFERER} !^$
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?jeiws\.com [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://localhost [NC]
+    RewriteRule ^assets/project-images/.*\.(jpg|jpeg|png|webp)$ - [F,NC,L]
+</IfModule>
+
 # Canonical trailing-slash redirect (avoid duplicate content)
 <IfModule mod_rewrite.c>
     RewriteEngine On

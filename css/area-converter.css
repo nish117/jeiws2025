@@ -107,7 +107,7 @@ label{
 
 input[type="number"]{
   padding:11px 14px;
-  width:86px;
+  width:110px;
   text-align:center;
   border:1.5px solid rgba(27,103,153,0.18);
   border-radius:10px;
@@ -160,7 +160,7 @@ button[onclick]:hover{
 button[onclick]:active{transform:translateY(0) !important}
 
 /* ── Sq. Meter/Feet inputs ───────────────── */
-.sq-meter input[type="number"]{width:130px}
+.sq-meter input[type="number"]{width:150px}
 
 /* ── Other units section title ───────────── */
 .area-container > div:not(.system-container):not(.clear-container) h3{
@@ -225,11 +225,11 @@ button.clear-btn:hover{
   .area-container h2{font-size:1.7rem}
   .system-container{padding:22px 18px 20px}
   .input-group{gap:10px 10px}
-  input[type="number"]{width:72px;font-size:14px}
-  .sq-meter input[type="number"]{width:110px}
+  input[type="number"]{width:90px;font-size:14px}
+  .sq-meter input[type="number"]{width:126px}
   .input-group > button,button[onclick]{padding:10px 18px !important;font-size:13px !important}
 }
 @media(max-width:380px){
-  input[type="number"]{width:62px}
-  .sq-meter input[type="number"]{width:96px}
+  input[type="number"]{width:78px}
+  .sq-meter input[type="number"]{width:110px}
 }

@@ -473,5 +473,15 @@ export const projects = [
             "assets/project-images/b8dab774_8/1778432969_3e30a175.jpg",
             "assets/project-images/b8dab774_8/1779769534_34e65f5b.jpg"
         ]
+    },
+    {
+        id: "82fe5684",
+        title: "testasdsda",
+        description: "asdsd",
+        image: "assets/project-images/82fe5684/1780844379_d09712b9.jpg",
+        gallery: [
+            "assets/project-images/82fe5684/1780843722_4bf4aebb.jpg",
+            "assets/project-images/82fe5684/1780844379_d09712b9.jpg"
+        ]
     }
 ];

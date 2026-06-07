@@ -70,7 +70,10 @@ if (!project) {
             <button class="lightbox-nav lightbox-prev" id="lb-prev" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
             <button class="lightbox-nav lightbox-next" id="lb-next" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
             <div class="lightbox-content">
-                <img id="lb-img" src="" alt="">
+                <div class="lb-img-wrap">
+                    <img id="lb-img" src="" alt="">
+                    <div class="lb-img-shield"></div>
+                </div>
                 <div class="lightbox-caption">
                     <span id="lb-counter"></span>
                     <span id="lb-title">${escHtml(project.title)}</span>
@@ -99,6 +102,10 @@ if (!project) {
         grid.appendChild(item);
         validImages.push(src);
     });
+
+    // ── Image protection ──────────────────────────────
+    grid.addEventListener('contextmenu', e => e.preventDefault());
+    grid.addEventListener('dragstart',   e => e.preventDefault());
 
     // ── Lightbox logic ────────────────────────────────
     const lightbox  = document.getElementById('lightbox');
@@ -135,6 +142,10 @@ if (!project) {
 
     function prevImage() { current = (current - 1 + validImages.length) % validImages.length; showImage(current); }
     function nextImage() { current = (current + 1) % validImages.length; showImage(current); }
+
+    lbImg.addEventListener('contextmenu', e => e.preventDefault());
+    lbImg.addEventListener('dragstart',   e => e.preventDefault());
+    lightbox.addEventListener('contextmenu', e => e.preventDefault());
 
     lbClose.addEventListener('click', closeLightbox);
     lbBackdrop.addEventListener('click', closeLightbox);

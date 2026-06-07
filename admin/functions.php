@@ -131,9 +131,67 @@ function deleteDir(string $dir): void {
 
 // ── Image processing ────────────────────────────────────
 // Resizes the image to at most MAX_IMG_DIM on its longest side (never upscales),
-// auto-corrects JPEG EXIF orientation, and re-encodes at quality 88.
+// auto-corrects JPEG EXIF orientation, stamps the company logo watermark,
+// and re-encodes at quality 88.
 // Returns true on success, false if GD is unavailable or the source is unreadable.
-define('MAX_IMG_DIM', 2400);
+define('MAX_IMG_DIM',        2400);
+define('WATERMARK_LOGO',     __DIR__ . '/../assets/logo.png');
+define('WATERMARK_OPACITY',  55);   // 0 = invisible, 100 = solid
+define('WATERMARK_MAX_W',    180);  // max logo width in pixels
+define('WATERMARK_SCALE',    0.12); // logo width as fraction of image width
+
+function applyWatermark(GdImage &$canvas, int $imgW, int $imgH): void {
+    if (!file_exists(WATERMARK_LOGO)) return;
+
+    $logo = @imagecreatefrompng(WATERMARK_LOGO);
+    if (!$logo) return;
+
+    $logoW = imagesx($logo);
+    $logoH = imagesy($logo);
+    if ($logoW <= 0 || $logoH <= 0) { imagedestroy($logo); return; }
+
+    // Scale: WATERMARK_SCALE% of image width, clamped to WATERMARK_MAX_W
+    $wmW = (int) max(40, min(WATERMARK_MAX_W, round($imgW * WATERMARK_SCALE)));
+    $wmH = (int) round($logoH * ($wmW / $logoW));
+
+    // Resize logo into a true-colour canvas with alpha channel
+    $scaled = imagecreatetruecolor($wmW, $wmH);
+    imagealphablending($scaled, false);
+    imagesavealpha($scaled, true);
+    imagefill($scaled, 0, 0, imagecolorallocatealpha($scaled, 0, 0, 0, 127));
+    imagecopyresampled($scaled, $logo, 0, 0, 0, 0, $wmW, $wmH, $logoW, $logoH);
+    imagedestroy($logo);
+
+    // Adjust every pixel's alpha to apply the desired opacity.
+    // GD alpha: 0 = fully opaque, 127 = fully transparent.
+    $opacity = max(0, min(100, WATERMARK_OPACITY));
+    for ($px = 0; $px < $wmW; $px++) {
+        for ($py = 0; $py < $wmH; $py++) {
+            $c       = imagecolorat($scaled, $px, $py);
+            $srcA    = ($c >> 24) & 0x7F;
+            // Pixels fully transparent in the logo stay fully transparent.
+            // Otherwise scale their opacity down to WATERMARK_OPACITY %.
+            $newA    = 127 - (int) round((127 - $srcA) * $opacity / 100);
+            imagesetpixel($scaled, $px, $py, imagecolorallocatealpha(
+                $scaled,
+                ($c >> 16) & 0xFF,
+                ($c >>  8) & 0xFF,
+                $c         & 0xFF,
+                $newA
+            ));
+        }
+    }
+
+    // Place in bottom-right corner with padding proportional to image width
+    $pad = (int) max(12, round($imgW * 0.015));
+    $x   = $imgW - $wmW - $pad;
+    $y   = $imgH - $wmH - $pad;
+
+    // Enable alpha blending on the canvas so the semi-transparent logo composites correctly
+    imagealphablending($canvas, true);
+    imagecopy($canvas, $scaled, $x, $y, 0, 0, $wmW, $wmH);
+    imagedestroy($scaled);
+}
 
 function processImage(string $tmpPath, string $dest, string $mime): bool {
     if (!extension_loaded('gd')) {
@@ -184,6 +242,9 @@ function processImage(string $tmpPath, string $dest, string $mime): bool {
 
     imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
     imagedestroy($src);
+
+    // Stamp company logo watermark (bottom-right, semi-transparent)
+    applyWatermark($dst, $newW, $newH);
 
     // quality 88 = visually lossless with good compression for JPEG/WebP;
     // PNG uses lossless compression level 6 (balanced speed vs file size)
