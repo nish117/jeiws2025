@@ -2,13 +2,19 @@
 session_start();
 if (isset($_SESSION['cms_auth'])) { header('Location: index.php'); exit; }
 
+require_once __DIR__ . '/functions.php';
+
 $credFile = __DIR__ . '/../data/cms_credentials.txt';
 $isSetup  = !file_exists($credFile);
 $error    = '';
 $success  = '';
+$csrf     = csrfToken();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($isSetup) {
+    $postedToken = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'], $postedToken)) {
+        $error = 'Invalid or expired form submission. Please try again.';
+    } elseif ($isSetup) {
         // Require a server-side setup secret to prevent anyone from creating admin credentials
         $setupSecret = getenv('CMS_SETUP_SECRET');
         $givenSecret = $_POST['setup_secret'] ?? '';
@@ -60,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if ($success): ?><div class="alert alert-ok" ><?= htmlspecialchars($success) ?></div><?php endif ?>
 
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
       <?php if ($isSetup): ?>
       <div class="form-group">
         <label>Setup Secret</label>

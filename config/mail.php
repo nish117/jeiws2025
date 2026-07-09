@@ -2,11 +2,11 @@
 defined('JEIWS_CONFIG') or die('Direct access denied.');
 
 return [
-    'host'     => 'smtp.gmail.com',
-    'username' => 'bajra.nish@gmail.com',
-    'password' => 'owsilneiknesnszu',
+    'host'     => 'mail.jeiws.com',
+    'username' => 'info@jeiws.com',
+    'password' => '1234567890jeiws2022',
     'port'     => 587,
-    'from'     => 'bajra.nish@gmail.com',
+    'from'     => 'info@jeiws.com',
     'to'       => 'bajra.nish@gmail.com',
     'fromName' => 'JEIWS Website',
 ];
