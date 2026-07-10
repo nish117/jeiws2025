@@ -542,7 +542,7 @@ h1{font-family:'Cormorant Garamond','Sora',serif;font-size:clamp(2rem,4vw,3rem);
 /* ===========================================
    WHY CHOOSE US
    =========================================== */
-.why-us{background:var(--bg-2);padding:112px 48px}
+.why-us{background:var(--bg-2);padding:72px 48px}
 .why-us h2{color:var(--ink)}
 .why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1160px;margin:56px auto 0;text-align:left}
 .why-card{background:var(--bg);border-radius:var(--rl);padding:40px 34px;border:1px solid rgba(200,145,26,0.12);box-shadow:var(--s1);transition:var(--ts);position:relative;overflow:hidden}
@@ -559,7 +559,7 @@ h1{font-family:'Cormorant Garamond','Sora',serif;font-size:clamp(2rem,4vw,3rem);
 /* ===========================================
    SERVICES
    =========================================== */
-#services{background:var(--bg)}
+#services{background:var(--bg);padding:72px 48px}
 #services .section-sub{margin-bottom:56px}
 .services-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;max-width:1160px;margin:0 auto}
 .service{background:var(--bg);border-radius:var(--rl);overflow:hidden;box-shadow:var(--s1);border:1px solid rgba(200,145,26,0.1);transition:var(--ts);text-align:left;display:flex;flex-direction:column}
@@ -601,7 +601,7 @@ h1{font-family:'Cormorant Garamond','Sora',serif;font-size:clamp(2rem,4vw,3rem);
 /* ===========================================
    TEAM
    =========================================== */
-#team{background:var(--bg-2);padding:112px 48px}
+#team{background:var(--bg-2);padding:72px 48px}
 .team-container{display:flex;justify-content:center;flex-wrap:wrap;gap:32px;max-width:1060px;margin:56px auto 0}
 .team-member{width:172px;text-align:center;transition:var(--ts)}
 .team-member:hover{transform:translateY(-10px)}
@@ -613,7 +613,7 @@ h1{font-family:'Cormorant Garamond','Sora',serif;font-size:clamp(2rem,4vw,3rem);
 /* ===========================================
    PROJECTS
    =========================================== */
-.projects{background:var(--bg-dark);padding:112px 48px;position:relative;overflow:hidden}
+.projects{background:var(--bg-dark);padding:72px 48px;position:relative;overflow:hidden}
 .projects::before{content:'';position:absolute;bottom:-300px;left:-200px;width:700px;height:700px;background:radial-gradient(circle,rgba(200,145,26,0.05) 0%,rgba(27,103,153,0.05) 40%,transparent 70%);pointer-events:none}
 .projects h2{color:#fff;margin-bottom:56px;font-family:'Cormorant Garamond',serif}
 .carousel-container{position:relative;max-width:1200px;margin:0 auto;padding:0 64px 4px}
@@ -1229,7 +1229,7 @@ footer p{line-height:1.8;margin:0}
 /* ===========================================
    VACANCIES PAGE
    =========================================== */
-.vacancies-page{margin-top:70px}
+.vacancies-page{margin-top:70px;position:relative}
 
 /* ── Hero ─────────────────────────────────── */
 .vacancies-hero{background:linear-gradient(135deg,var(--bg-dark) 0%,#0C1C2E 60%,#0F2038 100%);padding:120px 48px 72px;position:relative;overflow:hidden;text-align:center}
@@ -1245,10 +1245,10 @@ footer p{line-height:1.8;margin:0}
 .vacancies-hero-stat .stat-val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:#fff;letter-spacing:-1px;line-height:1}
 .vacancies-hero-stat .stat-lbl{font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:2px;margin-top:5px}
 .vacancies-hero-stat-divider{width:1px;height:36px;background:rgba(255,255,255,0.1)}
-.vacancies-hero-back{position:absolute;top:116px;left:48px;z-index:2;display:inline-flex;align-items:center;gap:8px;color:rgba(255,255,255,0.5);text-decoration:none;font-size:13px;font-weight:600;transition:var(--t);padding:6px 14px 6px 10px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05)}
-.vacancies-hero-back:hover{color:#fff;background:rgba(255,255,255,0.1);transform:translateX(-3px)}
+.vacancies-hero-back{position:absolute;top:28px;left:48px;margin-top:16px;z-index:2;display:inline-flex;align-items:center;gap:8px;color:var(--ink);text-decoration:none;font-size:13px;font-weight:600;transition:var(--t);padding:6px 14px 6px 10px;border-radius:100px;border:1px solid rgba(6,13,21,0.15);background:rgba(6,13,21,0.06)}
+.vacancies-hero-back:hover{color:var(--blue);background:var(--blue-pale);border-color:rgba(27,103,153,0.2);transform:translateX(-3px)}
 .vacancies-hero-back i{font-size:12px}
-@media(max-width:768px){.vacancies-hero-back{top:70px;left:24px}}
+@media(max-width:768px){.vacancies-hero-back{top:20px;left:24px;margin-top:16px}}
 
 /* ── Vacancies Section ────────────────────── */
 .vacancies-section{background:var(--bg-2)}
@@ -1321,10 +1321,12 @@ footer p{line-height:1.8;margin:0}
 .file-input-wrapper{border:1.5px dashed var(--rule);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;transition:var(--t);position:relative;background:var(--bg)}
 .file-input-wrapper:hover{border-color:var(--blue);background:var(--blue-pale)}
 .file-input-wrapper input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;padding:0}
+.file-input-wrapper.error{border-color:#e05050;background:rgba(224,80,80,0.06)}
 .file-input-icon{font-size:26px;color:var(--blue);margin-bottom:8px}
 .file-input-text{font-size:13.5px;color:var(--muted);line-height:1.6}
 .file-input-text strong{color:var(--blue)}
 .file-name-display{font-size:12.5px;color:var(--blue);margin-top:6px;font-weight:600;display:none}
+.file-error-msg{font-size:12.5px;color:#e05050;margin-top:6px;font-weight:600;display:none}
 .app-submit-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--blue);color:#fff;border:none;border-radius:100px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer;transition:var(--t);box-shadow:0 4px 20px var(--blue-glow);font-family:'Plus Jakarta Sans',sans-serif;margin-top:6px;width:100%}
 .app-submit-btn:hover{background:var(--blue-dim);transform:translateY(-2px);box-shadow:0 6px 26px var(--blue-glow)}
 .app-submit-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;box-shadow:none}

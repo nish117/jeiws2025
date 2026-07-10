@@ -72,9 +72,9 @@
     <div class="vacancies-page">
 
         <!-- â"€â"€ Hero â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ -->
-        <section class="vacancies-hero">
-            <a href="./" class="vacancies-hero-back"><i class="fas fa-chevron-left"></i> Back to Home</a>
-            <div class="vacancies-hero-inner">
+        <a href="./" class="vacancies-hero-back"><i class="fas fa-chevron-left"></i> Back to Home</a>
+        <!-- <section class="vacancies-hero"> -->
+            <!-- <div class="vacancies-hero-inner">
                 <div class="section-eyebrow">Careers at JEIWS</div>
                 <h1>Build Your Career<br>With Us</h1>
                 <p class="vacancies-hero-desc">Join Nepal's trusted construction and waterproofing company. We value expertise, commitment, and a passion for quality work. Explore our open positions below.</p>
@@ -94,16 +94,16 @@
                         <div class="stat-lbl">Projects Completed</div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </div> -->
+        <!-- </section> -->
 
         <!-- â"€â"€ Vacancies Section â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ -->
         <section class="vacancies-section">
-            <div class="vacancies-section-header">
+            <!-- <div class="vacancies-section-header">
                 <div class="section-eyebrow">Open Positions</div>
                 <h2>Current Vacancies</h2>
                 <p class="section-sub">We currently have no open positions. Check back soon or send us a general application &mdash; we'd love to hear from you.</p>
-            </div>
+            </div> -->
 
             <!-- No openings notice -->
             <div class="vacancies-no-openings">
@@ -113,7 +113,7 @@
             </div>
 
             <!-- Thank you card for Intern Engineer applicants -->
-            <div class="vacancy-thankyou-card">
+            <!-- <div class="vacancy-thankyou-card">
                 <div class="vacancy-thankyou-top">
                     <div class="vacancy-icon"><i class="fas fa-drafting-compass"></i></div>
                     <span class="vacancy-badge closed">Position Closed</span>
@@ -130,7 +130,7 @@
                         <p>We have received your applications for the Intern Civil Engineer position and we truly appreciate your interest in joining JEIWS. Our team is currently reviewing all submissions and will reach out to shortlisted candidates within the coming days. We wish you all the very best.</p>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <!-- General Application CTA -->
             <div class="vacancies-cta">
@@ -214,6 +214,7 @@
                             </div>
                         </div>
                         <div class="file-name-display" id="fileNameDisplay"></div>
+                        <div class="file-error-msg" id="fileErrorMsg">Please upload your CV or Resume to continue.</div>
                     </div>
 
                     <button type="submit" class="app-submit-btn" id="submitBtn">
@@ -259,6 +260,8 @@
 
         function handleFileSelect(input) {
             const display = document.getElementById('fileNameDisplay');
+            const errorMsg = document.getElementById('fileErrorMsg');
+            const dropZone = document.getElementById('fileDropZone');
             if (input.files && input.files[0]) {
                 const file = input.files[0];
                 if (file.size > 5 * 1024 * 1024) {
@@ -269,6 +272,8 @@
                 }
                 display.textContent = '✔ ' + file.name;
                 display.style.display = 'block';
+                errorMsg.style.display = 'none';
+                dropZone.classList.remove('error');
             }
         }
 
@@ -285,6 +290,19 @@
 
         document.getElementById('applicationForm').addEventListener('submit', function(e) {
             e.preventDefault();
+
+            const cvFile = document.getElementById('cvFile');
+            const errorMsg = document.getElementById('fileErrorMsg');
+            const dropZone = document.getElementById('fileDropZone');
+            if (!cvFile.files || !cvFile.files[0]) {
+                errorMsg.style.display = 'block';
+                dropZone.classList.add('error');
+                dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            errorMsg.style.display = 'none';
+            dropZone.classList.remove('error');
+
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
@@ -297,6 +315,8 @@
                         document.getElementById('applicationSuccessModal').style.display = 'flex';
                         document.getElementById('applicationForm').reset();
                         document.getElementById('fileNameDisplay').style.display = 'none';
+                        document.getElementById('fileErrorMsg').style.display = 'none';
+                        document.getElementById('fileDropZone').classList.remove('error');
                     } else {
                         alert('Something went wrong. Please try again or call us directly.');
                     }
