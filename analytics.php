@@ -20,7 +20,9 @@ $data = json_decode($raw, true);
 if (!is_array($data)) { http_response_code(204); exit; }
 
 $ip      = $_SERVER['REMOTE_ADDR'] ?? '';
-$logFile = __DIR__ . '/data/analytics.log';
+$logDir  = __DIR__ . '/data/log';
+if (!is_dir($logDir)) { @mkdir($logDir, 0755, true); }
+$logFile = $logDir . '/analytics.log';
 
 // Sanitize helpers
 $clean = function(string $v, int $max, string $pattern = ''): string {

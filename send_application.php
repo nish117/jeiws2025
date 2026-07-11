@@ -14,6 +14,33 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 define('JEIWS_CONFIG', 1);
 $cfg = require __DIR__ . '/config/mail.php';
 
+$logDir = __DIR__ . '/data/log';
+if (!is_dir($logDir)) { @mkdir($logDir, 0755, true); }
+
+function detectCvMimeType(string $path): string {
+    if (function_exists('mime_content_type')) {
+        $mime = @mime_content_type($path);
+        if ($mime) return $mime;
+    }
+    if (function_exists('finfo_open')) {
+        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $mime = finfo_file($finfo, $path);
+            finfo_close($finfo);
+            if ($mime) return $mime;
+        }
+    }
+    // Neither fileinfo function is available on this server — sniff magic bytes instead
+    $handle = @fopen($path, 'rb');
+    if (!$handle) return '';
+    $bytes = fread($handle, 8);
+    fclose($handle);
+    if (substr($bytes, 0, 4) === '%PDF') return 'application/pdf';
+    if (substr($bytes, 0, 8) === "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1") return 'application/msword';
+    if (substr($bytes, 0, 4) === "PK\x03\x04") return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    return '';
+}
+
 $mail = new PHPMailer(true);
 try {
     $name       = htmlspecialchars(trim($_POST["name"]     ?? ''));
@@ -25,6 +52,17 @@ try {
     $message    = htmlspecialchars(trim($_POST["message"]   ?? ''));
 
     if (empty($name) || empty($email) || empty($phone) || empty($message) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $logFile = $logDir . '/mail_errors.log';
+        $entry   = '[' . date('Y-m-d H:i:s') . '] '
+                 . 'Application validation failed | '
+                 . 'name=' . ($name !== '' ? 'ok' : 'empty') . ' '
+                 . 'email=' . ($email !== '' ? 'ok' : 'empty') . ' '
+                 . 'phone=' . ($phone !== '' ? 'ok' : 'empty') . ' '
+                 . 'message=' . ($message !== '' ? 'ok' : 'empty') . ' '
+                 . '| Content-Length: ' . ($_SERVER['CONTENT_LENGTH'] ?? 'n/a')
+                 . ' | POST count: ' . count($_POST)
+                 . ' | FILES count: ' . count($_FILES) . PHP_EOL;
+        file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
         echo "error";
         exit;
     }
@@ -44,7 +82,7 @@ try {
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ];
-        $fileMime = mime_content_type($_FILES['cv']['tmp_name']);
+        $fileMime = detectCvMimeType($_FILES['cv']['tmp_name']);
         if (in_array($fileMime, $allowedMimes) && $_FILES['cv']['size'] <= 5 * 1024 * 1024) {
             // Sanitize filename: strip path components, keep only safe characters
             $origName   = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($_FILES['cv']['name']));
@@ -111,6 +149,18 @@ try {
     echo $mail->send() ? "success" : "error";
 
 } catch (Exception $e) {
-    echo "error";
+    $logFile = $logDir . '/mail_errors.log';
+    $entry   = '[' . date('Y-m-d H:i:s') . '] '
+             . 'Application from: ' . ($name ?? '?') . ' <' . ($email ?? '?') . '> | '
+             . 'Error: ' . $mail->ErrorInfo . PHP_EOL;
+    file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
+    echo "error1";
+} catch (Throwable $e) {
+    $logFile = $logDir . '/mail_errors.log';
+    $entry   = '[' . date('Y-m-d H:i:s') . '] '
+             . 'Application fatal error: ' . $e->getMessage()
+             . ' in ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL;
+    file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
+    echo "error2";
 }
 ?>

@@ -163,7 +163,8 @@
                         </div>
                         <div class="form-group">
                             <label>Email Address <span class="req">*</span></label>
-                            <input type="email" name="email" placeholder="your@email.com" required>
+                            <input type="email" name="email" id="appEmail" placeholder="your@email.com" required>
+                            <div class="field-error-msg" id="emailErrorMsg">Please enter a valid email address.</div>
                         </div>
                     </div>
 
@@ -288,8 +289,29 @@
             }
         });
 
+        const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        const appEmail = document.getElementById('appEmail');
+        appEmail.addEventListener('input', function() {
+            if (EMAIL_RE.test(this.value.trim())) {
+                document.getElementById('emailErrorMsg').style.display = 'none';
+                this.classList.remove('error');
+            }
+        });
+
         document.getElementById('applicationForm').addEventListener('submit', function(e) {
             e.preventDefault();
+
+            const emailErrorMsg = document.getElementById('emailErrorMsg');
+            if (!EMAIL_RE.test(appEmail.value.trim())) {
+                emailErrorMsg.style.display = 'block';
+                appEmail.classList.add('error');
+                appEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                appEmail.focus();
+                return;
+            }
+            emailErrorMsg.style.display = 'none';
+            appEmail.classList.remove('error');
 
             const cvFile = document.getElementById('cvFile');
             const errorMsg = document.getElementById('fileErrorMsg');
@@ -317,6 +339,8 @@
                         document.getElementById('fileNameDisplay').style.display = 'none';
                         document.getElementById('fileErrorMsg').style.display = 'none';
                         document.getElementById('fileDropZone').classList.remove('error');
+                        document.getElementById('emailErrorMsg').style.display = 'none';
+                        appEmail.classList.remove('error');
                     } else {
                         alert('Something went wrong. Please try again or call us directly.');
                     }

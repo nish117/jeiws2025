@@ -17,6 +17,9 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 define('JEIWS_CONFIG', 1);
 $cfg = require __DIR__ . '/config/mail.php';
 
+$logDir = __DIR__ . '/data/log';
+if (!is_dir($logDir)) { @mkdir($logDir, 0755, true); }
+
 $name    = htmlspecialchars(trim($_POST["name"]    ?? ''));
 $email   = filter_var(trim($_POST["email"] ?? ''), FILTER_SANITIZE_EMAIL);
 $phone   = htmlspecialchars(trim($_POST["phone"]   ?? ''));
@@ -154,7 +157,7 @@ HTML;
     echo json_encode(['ok' => true]);
 
 } catch (Exception $e) {
-    $logFile = __DIR__ . '/data/mail_errors.log';
+    $logFile = $logDir . '/mail_errors.log';
     $entry   = '[' . date('Y-m-d H:i:s') . '] '
              . 'From: ' . $name . ' <' . $email . '> | '
              . 'Error: ' . $mail->ErrorInfo . PHP_EOL;

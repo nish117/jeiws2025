@@ -1317,6 +1317,9 @@ footer p{line-height:1.8;margin:0}
 .form-group label .req{color:#e05050;margin-left:2px}
 .form-group input,.form-group select,.form-group textarea{border:1.5px solid var(--rule);border-radius:10px;padding:11px 14px;font-size:14.5px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);background:var(--bg);transition:var(--t);outline:none;width:100%;box-sizing:border-box}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,103,153,0.12)}
+.form-group input.error{border-color:#e05050}
+.form-group input.error:focus{box-shadow:0 0 0 3px rgba(224,80,80,0.12)}
+.field-error-msg{font-size:12.5px;color:#e05050;margin-top:2px;font-weight:600;display:none}
 .form-group textarea{resize:vertical;min-height:100px}
 .file-input-wrapper{border:1.5px dashed var(--rule);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;transition:var(--t);position:relative;background:var(--bg)}
 .file-input-wrapper:hover{border-color:var(--blue);background:var(--blue-pale)}

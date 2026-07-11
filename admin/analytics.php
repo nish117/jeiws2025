@@ -17,7 +17,7 @@ $prevCutoff = $range !== 'all'
     : '';
 
 // ── Read log (single pass, split into current + previous periods) ────────────
-$logFile = __DIR__ . '/../data/analytics.log';
+$logFile = __DIR__ . '/../data/log/analytics.log';
 $entries = [];
 $prevEntries = [];
 if (file_exists($logFile)) {
