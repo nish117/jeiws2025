@@ -16,6 +16,7 @@ $csrf = csrfToken();
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Projects — JEIWS CMS</title>
 <link rel="stylesheet" href="cms.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
@@ -25,9 +26,10 @@ $csrf = csrfToken();
     JEIWS <span>CMS</span>
   </a>
   <div class="cms-nav-right">
+    <a href="index.php" class="active">Projects</a>
     <a href="analytics.php">Analytics</a>
-    <a href="../index.html" target="_blank">← View Site</a>
-    <a href="logout.php" class="btn-logout">Logout</a>
+    <a href="../index.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Site</a>
+    <a href="logout.php" class="btn-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
   </div>
 </nav>
 
@@ -42,12 +44,12 @@ $csrf = csrfToken();
       <h1>Projects</h1>
       <p><?= $publishCount ?> published<?= $draftCount ? ' &middot; ' . $draftCount . ' draft' . ($draftCount !== 1 ? 's' : '') : '' ?></p>
     </div>
-    <a href="project.php" class="btn btn-primary">+ Add Project</a>
+    <a href="project.php" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Project</a>
   </div>
 
   <?php if (empty($projects)): ?>
   <div class="empty">
-    <div class="empty-icon">📁</div>
+    <div class="empty-icon"><i class="fa-regular fa-folder-open"></i></div>
     <h3>No projects yet</h3>
     <p>Click "Add Project" to get started.</p>
   </div>
@@ -66,12 +68,12 @@ $csrf = csrfToken();
           <?= count($p['gallery'] ?? []) ?> photos &middot; ID #<?= $p['id'] ?>
         </div>
         <div class="proj-card-actions">
-          <a href="project.php?id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm">✏ Edit</a>
+          <a href="project.php?id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen"></i> Edit</a>
           <button class="btn btn-danger btn-sm"
                   data-id="<?= htmlspecialchars($p['id']) ?>"
                   data-title="<?= htmlspecialchars($p['title']) ?>"
                   onclick="confirmDelete(this.dataset.id, this.dataset.title)">
-            🗑 Delete
+            <i class="fa-solid fa-trash"></i> Delete
           </button>
         </div>
       </div>

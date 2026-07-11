@@ -154,42 +154,43 @@ $bounceRate = $uniqueSessions > 0 ? round($bounced / $uniqueSessions * 100) : 0;
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Analytics — JEIWS CMS</title>
 <link rel="stylesheet" href="cms.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ── Base ─────────────────────────────────────────────── */
-body{background:#f0f4f8}
 .an-wrap{max-width:1300px;margin:0 auto;padding:0 0 60px}
 
 /* ── Range bar ────────────────────────────────────────── */
 .an-range-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px}
-.an-range-btn{padding:7px 18px;border-radius:20px;border:1.5px solid #c8d8e4;background:#fff;
-  color:#3a5a72;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;
-  transition:all .15s;line-height:1}
-.an-range-btn:hover{border-color:#1b6799;color:#1b6799}
-.an-range-btn.active{background:#1b6799;border-color:#1b6799;color:#fff}
+.an-range-btn{padding:8px 18px;min-height:36px;display:inline-flex;align-items:center;border-radius:100px;border:1.5px solid var(--border);background:var(--surface);
+  color:var(--text);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;
+  transition:background var(--t),border-color var(--t),color var(--t);line-height:1}
+.an-range-btn:hover{border-color:var(--blue);color:var(--blue)}
+.an-range-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
 
 /* ── Stat cards ───────────────────────────────────────── */
 .an-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
-.an-stat{background:#fff;border-radius:12px;padding:22px 20px 18px;
-  box-shadow:0 1px 4px rgba(0,0,0,.07);position:relative;overflow:hidden}
+.an-stat{background:var(--surface);border-radius:var(--r-lg);padding:22px 20px 18px;
+  box-shadow:var(--s1);border:1px solid var(--border-2);position:relative;overflow:hidden}
 .an-stat::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,#1b6799,#2a9d8f)}
-.an-stat-num{font-size:2.1rem;font-weight:800;color:#0c1e2d;line-height:1;letter-spacing:-1px}
-.an-stat-lbl{font-size:11px;color:#6b849a;font-weight:700;margin-top:6px;
+  background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
+.an-stat-icon{color:var(--blue);font-size:15px;margin-bottom:8px;display:block}
+.an-stat-num{font-family:'Sora',sans-serif;font-size:2rem;font-weight:800;color:var(--navy);line-height:1;letter-spacing:-1px}
+.an-stat-lbl{font-size:11px;color:var(--muted);font-weight:700;margin-top:6px;
   text-transform:uppercase;letter-spacing:.6px}
-.an-stat-trend{display:inline-flex;align-items:center;gap:3px;margin-top:8px;
+.an-stat-trend{display:inline-flex;align-items:center;gap:4px;margin-top:8px;
   font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px}
-.an-stat-trend.up{background:#e8f7ef;color:#1a9966}
-.an-stat-trend.down{background:#fde8e8;color:#c0392b}
-.an-stat-trend.neu{background:#f0f4f8;color:#6b849a}
+.an-stat-trend.up{background:#E8F7EF;color:#1A9966}
+.an-stat-trend.down{background:#FDE8E8;color:#C0392B}
+.an-stat-trend.neu{background:var(--bg);color:var(--muted)}
 
 /* ── Cards ────────────────────────────────────────────── */
-.an-card{background:#fff;border-radius:12px;padding:22px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.an-card{background:var(--surface);border-radius:var(--r-lg);padding:22px;box-shadow:var(--s1);border:1px solid var(--border-2)}
 .an-card-hdr{display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #edf2f7}
-.an-card-title{font-size:13px;font-weight:700;color:#3a5a72;
+  margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border-2)}
+.an-card-title{font-size:13px;font-weight:700;color:var(--navy);
   text-transform:uppercase;letter-spacing:.5px;margin:0}
-.an-card-sub{font-size:11px;color:#8fa5b5}
+.an-card-sub{font-size:11px;color:var(--muted-2)}
 
 /* ── Layout grids ─────────────────────────────────────── */
 .an-row-2{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px}
@@ -203,34 +204,34 @@ body{background:#f0f4f8}
 .an-donut-wrap{position:relative;height:220px}
 
 /* ── Horizontal bar rows ──────────────────────────────── */
-.an-hrow{padding:9px 0;border-bottom:1px solid #f0f4f8;display:flex;align-items:center;gap:10px;font-size:13px}
+.an-hrow{padding:9px 0;border-bottom:1px solid var(--border-2);display:flex;align-items:center;gap:10px;font-size:13px}
 .an-hrow:last-child{border:none;padding-bottom:0}
-.an-hrow-rank{font-size:11px;font-weight:700;color:#b0bec5;min-width:18px;text-align:center}
-.an-hrow-label{flex:1;color:#1a2b3c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+.an-hrow-rank{font-size:11px;font-weight:700;color:#B0BEC5;min-width:18px;text-align:center}
+.an-hrow-label{flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   min-width:0;font-weight:500}
-.an-hrow-bar-bg{width:80px;height:6px;background:#e8f0f6;border-radius:3px;overflow:hidden;flex-shrink:0}
-.an-hrow-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#1b6799,#2a9d8f)}
-.an-hrow-count{font-weight:700;color:#1b6799;min-width:28px;text-align:right;font-size:13px}
-.an-hrow-pct{font-size:11px;color:#8fa5b5;min-width:32px;text-align:right}
+.an-hrow-bar-bg{width:80px;height:6px;background:var(--blue-pale);border-radius:3px;overflow:hidden;flex-shrink:0}
+.an-hrow-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue-dim),var(--blue))}
+.an-hrow-count{font-weight:700;color:var(--blue);min-width:28px;text-align:right;font-size:13px}
+.an-hrow-pct{font-size:11px;color:var(--muted-2);min-width:32px;text-align:right}
 
 /* ── Recent table ─────────────────────────────────────── */
 .an-table-wrap{overflow-x:auto}
 .an-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
-.an-table th{text-align:left;padding:9px 12px;background:#f6f9fc;color:#6b849a;
-  font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e4ecf4;
+.an-table th{text-align:left;padding:9px 12px;background:#F6F9FC;color:var(--muted);
+  font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border-2);
   white-space:nowrap}
-.an-table td{padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#1a2b3c;
+.an-table td{padding:9px 12px;border-bottom:1px solid var(--border-2);color:var(--text);
   max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.an-table tr:hover td{background:#f8fafc}
+.an-table tr:hover td{background:#F8FAFC}
 .an-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
-.an-badge-m{background:#dbeafe;color:#1b6799}
-.an-badge-d{background:#dcfce7;color:#166534}
-.an-badge-t{background:#fef3c7;color:#92400e}
+.an-badge-m{background:#DBEAFE;color:var(--blue)}
+.an-badge-d{background:#DCFCE7;color:#166534}
+.an-badge-t{background:#FEF3C7;color:#92400E}
 
 /* ── Empty state ──────────────────────────────────────── */
 .an-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:48px 24px;color:#8fa5b5;font-size:14px;gap:10px;text-align:center}
-.an-empty-icon{font-size:36px;opacity:.4}
+  padding:48px 24px;color:var(--muted-2);font-size:14px;gap:10px;text-align:center}
+.an-empty-icon{font-size:32px;opacity:.5;color:var(--border)}
 </style>
 </head>
 <body>
@@ -240,9 +241,10 @@ body{background:#f0f4f8}
     <img src="../assets/logo.png" alt="">JEIWS <span>CMS</span>
   </a>
   <div class="cms-nav-right">
-    <a href="analytics.php" style="color:#F0A030;font-weight:700">Analytics</a>
-    <a href="../index.html" target="_blank">← View Site</a>
-    <a href="logout.php" class="btn-logout">Logout</a>
+    <a href="index.php">Projects</a>
+    <a href="analytics.php" class="active">Analytics</a>
+    <a href="../index.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Site</a>
+    <a href="logout.php" class="btn-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
   </div>
 </nav>
 
@@ -266,30 +268,31 @@ body{background:#f0f4f8}
   <!-- ── Stat cards ────────────────────────────────────── -->
   <div class="an-stats">
     <?php
-    function statCard(string $num, string $label, ?int $trendPct, string $icon): void {
+    function statCard(string $num, string $label, ?int $trendPct, string $iconClass): void {
         echo "<div class='an-stat'>";
-        echo "<div class='an-stat-num'>$icon $num</div>";
+        echo "<i class='an-stat-icon fa-solid $iconClass'></i>";
+        echo "<div class='an-stat-num'>$num</div>";
         echo "<div class='an-stat-lbl'>$label</div>";
         if ($trendPct !== null) {
             $cls  = $trendPct > 0 ? 'up' : ($trendPct < 0 ? 'down' : 'neu');
-            $arr  = $trendPct > 0 ? '↑' : ($trendPct < 0 ? '↓' : '→');
+            $arrIcon = $trendPct > 0 ? 'fa-arrow-up' : ($trendPct < 0 ? 'fa-arrow-down' : 'fa-arrow-right');
             $abs  = abs($trendPct);
-            echo "<div class='an-stat-trend $cls'>$arr $abs% vs prev</div>";
+            echo "<div class='an-stat-trend $cls'><i class='fa-solid $arrIcon'></i> $abs% vs prev</div>";
         }
         echo "</div>";
     }
-    statCard(number_format($totalViews),     'Page Views',       trendPct($totalViews, $prevViews),         '📄');
-    statCard(number_format($uniqueVisitors), 'Unique Visitors',  trendPct($uniqueVisitors, $prevVisitors),  '👥');
-    statCard(number_format($uniqueSessions), 'Sessions',         null,                                      '🔄');
-    statCard($bounceRate . '%',              'Bounce Rate',      null,                                      '↩');
-    statCard($avgLoad > 0 ? $avgLoad . 's' : '—', 'Avg Load Time', null,                                   '⚡');
+    statCard(number_format($totalViews),     'Page Views',       trendPct($totalViews, $prevViews),         'fa-file-lines');
+    statCard(number_format($uniqueVisitors), 'Unique Visitors',  trendPct($uniqueVisitors, $prevVisitors),  'fa-users');
+    statCard(number_format($uniqueSessions), 'Sessions',         null,                                      'fa-rotate');
+    statCard($bounceRate . '%',              'Bounce Rate',      null,                                      'fa-arrow-turn-down-left');
+    statCard($avgLoad > 0 ? $avgLoad . 's' : '—', 'Avg Load Time', null,                                   'fa-bolt');
     ?>
   </div>
 
   <?php if ($totalViews === 0): ?>
   <div class="an-card">
     <div class="an-empty">
-      <div class="an-empty-icon">📊</div>
+      <div class="an-empty-icon"><i class="fa-solid fa-chart-simple"></i></div>
       <strong>No data for this period</strong>
       <span>Visits will appear here once <code>analytics.js</code> is active on your pages.</span>
     </div>

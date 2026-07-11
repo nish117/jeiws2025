@@ -28,6 +28,7 @@ $p = $isNew
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= $isNew ? 'New Project' : 'Edit: ' . htmlspecialchars($p['title']) ?> — JEIWS CMS</title>
 <link rel="stylesheet" href="cms.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
@@ -37,9 +38,10 @@ $p = $isNew
     JEIWS <span>CMS</span>
   </a>
   <div class="cms-nav-right">
+    <a href="index.php" class="active">Projects</a>
     <a href="analytics.php">Analytics</a>
-    <a href="../index.html" target="_blank">← View Site</a>
-    <a href="logout.php" class="btn-logout">Logout</a>
+    <a href="../index.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Site</a>
+    <a href="logout.php" class="btn-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
   </div>
 </nav>
 
@@ -55,7 +57,7 @@ $p = $isNew
       <h1><?= $isNew ? 'Add New Project' : 'Edit Project' ?></h1>
       <p>ID #<?= $p['id'] ?></p>
     </div>
-    <a href="index.php" class="btn btn-ghost btn-sm">← Back</a>
+    <a href="index.php" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back</a>
   </div>
 
   <div class="editor-grid">
@@ -88,7 +90,7 @@ $p = $isNew
           </div>
         </div>
         <button class="btn btn-primary" id="save-btn" onclick="saveDetails()">
-          💾 Save Details
+          <i class="fa-solid fa-floppy-disk"></i> Save Details
         </button>
       </div>
 
@@ -118,7 +120,7 @@ $p = $isNew
 
         <?php if ($isNew): ?>
         <div class="alert alert-ok" style="margin-bottom:16px">
-          💡 Save the project details first, then upload photos.
+          <i class="fa-solid fa-circle-info"></i> Save the project details first, then upload photos.
         </div>
         <?php endif ?>
 
@@ -135,14 +137,14 @@ $p = $isNew
             <img src="../<?= $esc ?>" loading="lazy" alt=""
                  onerror="this.parentElement.style.background='#e8eef4';this.style.display='none'">
             <div class="photo-overlay">
-              <span class="photo-zoom-hint">&#128269;</span>
+              <span class="photo-zoom-hint"><i class="fa-solid fa-magnifying-glass"></i></span>
               <button class="photo-btn vis-btn<?= !$isPub ? ' is-unpub' : '' ?>"
                       title="<?= $isPub ? 'Hide from gallery' : 'Show in gallery' ?>"
-                      onclick="togglePublish('<?= $js ?>', this)">&#128065;</button>
+                      onclick="togglePublish('<?= $js ?>', this)"><i class="fa-solid fa-eye"></i></button>
               <?php if (!$isMain): ?>
-              <button class="photo-btn" title="Set as main" onclick="setMain('<?= $js ?>')">⭐</button>
+              <button class="photo-btn" title="Set as main" onclick="setMain('<?= $js ?>')"><i class="fa-solid fa-star"></i></button>
               <?php endif ?>
-              <button class="photo-btn del" title="Delete" onclick="deletePhoto('<?= $js ?>', this)">🗑</button>
+              <button class="photo-btn del" title="Delete" onclick="deletePhoto('<?= $js ?>', this)"><i class="fa-solid fa-trash"></i></button>
             </div>
           </div>
           <?php endforeach ?>
@@ -152,7 +154,7 @@ $p = $isNew
         <div class="upload-zone <?= $isNew ? 'disabled' : '' ?>" id="upload-zone">
           <input type="file" id="file-input"
                  accept="image/jpeg,image/png,image/webp" multiple>
-          <div class="uz-icon">📷</div>
+          <div class="uz-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
           <p><strong>Click to upload</strong> or drag &amp; drop</p>
           <p style="font-size:12px">JPEG · PNG · WebP &mdash; max 10 MB each</p>
           <div class="progress-wrap" id="prog-wrap">
@@ -170,9 +172,9 @@ $p = $isNew
 
 <!-- ── CMS Lightbox ──────────────────────────────── -->
 <div id="cms-lb" class="cms-lb">
-  <button class="cms-lb-close" id="cms-lb-close" aria-label="Close">&#10005;</button>
-  <button class="cms-lb-nav cms-lb-prev" id="cms-lb-prev" aria-label="Previous">&#8249;</button>
-  <button class="cms-lb-nav cms-lb-next" id="cms-lb-next" aria-label="Next">&#8250;</button>
+  <button class="cms-lb-close" id="cms-lb-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+  <button class="cms-lb-nav cms-lb-prev" id="cms-lb-prev" aria-label="Previous"><i class="fa-solid fa-chevron-left"></i></button>
+  <button class="cms-lb-nav cms-lb-next" id="cms-lb-next" aria-label="Next"><i class="fa-solid fa-chevron-right"></i></button>
   <div class="cms-lb-inner">
     <img id="cms-lb-img" src="" alt="">
   </div>
@@ -203,11 +205,12 @@ async function saveDetails() {
   if (!title) { toast('Please enter a project title.', 'err'); return; }
 
   const btn = document.getElementById('save-btn');
+  const SAVE_LABEL = '<i class="fa-solid fa-floppy-disk"></i> Save Details';
   btn.disabled = true; btn.textContent = 'Saving…';
 
   const r = await post({ action: 'save_project', project_id: PID, title, description: desc, is_draft: isDraft });
 
-  btn.disabled = false; btn.innerHTML = '💾 Save Details';
+  btn.disabled = false; btn.innerHTML = SAVE_LABEL;
 
   if (r.success) {
     toast(isDraft ? 'Saved as draft.' : 'Published!', 'ok');
@@ -235,9 +238,10 @@ async function setMain(photo) {
 
 /* ── Toggle image publish ──────────────────────── */
 async function togglePublish(photo, btn) {
+  const EYE_ICON = '<i class="fa-solid fa-eye"></i>';
   btn.textContent = '…';
   const r = await post({ action: 'toggle_image_publish', project_id: PID, photo });
-  btn.innerHTML = '&#128065;';
+  btn.innerHTML = EYE_ICON;
   if (r.success) {
     const item = btn.closest('.photo-item');
     item.classList.toggle('is-unpub', !r.published);
@@ -259,7 +263,7 @@ async function deletePhoto(photo, btn) {
     adjustCount(-1);
     toast('Photo deleted.', 'ok');
   } else {
-    btn.textContent = '🗑';
+    btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
     toast(r.error || 'Delete failed.', 'err');
   }
 }
@@ -322,10 +326,10 @@ function appendPhoto(path, isFirst) {
   div.innerHTML = `
     <img src="../${path}" loading="lazy" alt="">
     <div class="photo-overlay">
-      <span class="photo-zoom-hint">&#128269;</span>
-      <button class="photo-btn vis-btn" title="Hide from gallery" onclick="togglePublish('${esc}', this)">&#128065;</button>
-      ${!isFirst ? `<button class="photo-btn" title="Set as main" onclick="setMain('${esc}')">⭐</button>` : ''}
-      <button class="photo-btn del" title="Delete" onclick="deletePhoto('${esc}', this)">🗑</button>
+      <span class="photo-zoom-hint"><i class="fa-solid fa-magnifying-glass"></i></span>
+      <button class="photo-btn vis-btn" title="Hide from gallery" onclick="togglePublish('${esc}', this)"><i class="fa-solid fa-eye"></i></button>
+      ${!isFirst ? `<button class="photo-btn" title="Set as main" onclick="setMain('${esc}')"><i class="fa-solid fa-star"></i></button>` : ''}
+      <button class="photo-btn del" title="Delete" onclick="deletePhoto('${esc}', this)"><i class="fa-solid fa-trash"></i></button>
     </div>`;
   grid.appendChild(div);
   if (isFirst) {

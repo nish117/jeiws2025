@@ -193,6 +193,33 @@ function applyWatermark(GdImage &$canvas, int $imgW, int $imgH): void {
     imagedestroy($scaled);
 }
 
+// Detect a file's real MIME type without hard-depending on the fileinfo
+// extension, which is not enabled on every host (falls back to sniffing
+// the image's magic bytes).
+function detectImageMimeType(string $path): string {
+    if (function_exists('finfo_open')) {
+        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $mime = finfo_file($finfo, $path);
+            finfo_close($finfo);
+            if ($mime) return $mime;
+        }
+    }
+    if (function_exists('mime_content_type')) {
+        $mime = @mime_content_type($path);
+        if ($mime) return $mime;
+    }
+
+    $handle = @fopen($path, 'rb');
+    if (!$handle) return '';
+    $bytes = fread($handle, 12);
+    fclose($handle);
+    if (substr($bytes, 0, 3) === "\xFF\xD8\xFF") return 'image/jpeg';
+    if (substr($bytes, 0, 8) === "\x89PNG\x0D\x0A\x1A\x0A") return 'image/png';
+    if (substr($bytes, 0, 4) === 'RIFF' && substr($bytes, 8, 4) === 'WEBP') return 'image/webp';
+    return '';
+}
+
 function processImage(string $tmpPath, string $dest, string $mime): bool {
     if (!extension_loaded('gd')) {
         return copy($tmpPath, $dest);

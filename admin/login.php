@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= $isSetup ? 'Setup' : 'Login' ?> — JEIWS CMS</title>
 <link rel="stylesheet" href="cms.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 <div class="login-page">
@@ -56,27 +57,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1><?= $isSetup ? 'Create Admin Password' : 'CMS Login' ?></h1>
     <p><?= $isSetup ? 'Set a password to protect your CMS.' : 'Sign in to manage projects.' ?></p>
 
-    <?php if ($error):   ?><div class="alert alert-err"><?= htmlspecialchars($error)   ?></div><?php endif ?>
-    <?php if ($success): ?><div class="alert alert-ok" ><?= htmlspecialchars($success) ?></div><?php endif ?>
+    <?php if ($error):   ?><div class="alert alert-err"><i class="fa-solid fa-circle-exclamation"></i> <?= htmlspecialchars($error)   ?></div><?php endif ?>
+    <?php if ($success): ?><div class="alert alert-ok"><i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($success) ?></div><?php endif ?>
 
     <form method="POST">
       <?php if ($isSetup): ?>
       <div class="form-group">
         <label>Setup Secret</label>
-        <input type="password" name="setup_secret" required autofocus placeholder="Server setup secret">
+        <input type="password" name="setup_secret" required autofocus autocomplete="off" placeholder="Server setup secret">
       </div>
       <?php endif ?>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" name="password" required <?= !$isSetup ? 'autofocus' : '' ?> placeholder="Enter password">
+        <input type="password" name="password" required <?= !$isSetup ? 'autofocus' : '' ?>
+               autocomplete="<?= $isSetup ? 'new-password' : 'current-password' ?>" placeholder="Enter password">
       </div>
       <?php if ($isSetup): ?>
       <div class="form-group">
         <label>Confirm Password</label>
-        <input type="password" name="password2" required placeholder="Repeat password">
+        <input type="password" name="password2" required autocomplete="new-password" placeholder="Repeat password">
       </div>
       <?php endif ?>
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px">
+        <i class="fa-solid <?= $isSetup ? 'fa-shield-halved' : 'fa-right-to-bracket' ?>"></i>
         <?= $isSetup ? 'Set Password' : 'Sign In' ?>
       </button>
     </form>

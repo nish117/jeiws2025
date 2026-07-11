@@ -63,9 +63,7 @@ switch ($action) {
         if ($file['size'] > 10 * 1024 * 1024) { ok_err('File exceeds 10 MB limit'); }
 
         // Validate real MIME type
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime  = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
+        $mime = detectImageMimeType($file['tmp_name']);
 
         $extMap = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
         if (!isset($extMap[$mime])) { ok_err('Invalid file type — use JPEG, PNG or WebP'); }
