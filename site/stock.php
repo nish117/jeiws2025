@@ -53,7 +53,7 @@ if ($filterFrom !== '')   { $where[] = 'ms.txn_date >= :dfrom';    $params['dfro
 if ($filterTo !== '')     { $where[] = 'ms.txn_date <= :dto';      $params['dto']   = $filterTo; }
 
 $stmt = db()->prepare(
-    'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.notes
+    'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes
      FROM materials_stock ms
      JOIN materials m ON m.id = ms.material_id
      WHERE ' . implode(' AND ', $where) . '
@@ -88,6 +88,7 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
   </a>
   <div class="cms-nav-right">
     <span class="site-welcome">Hi, <?= htmlspecialchars($_SESSION['site_user_name']) ?></span>
+    <a href="change_password.php"><i class="fa-solid fa-key"></i> Password</a>
     <a href="logout.php" class="btn-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
   </div>
 </nav>
@@ -134,12 +135,12 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
     <form onsubmit="return logStock(event)">
       <div class="form-group">
         <label>Material</label>
-        <select id="stock-material" required>
+        <select id="stock-material" required onchange="onStockMaterialChange()">
           <option value="">— Select material —</option>
           <?php foreach ($materialsByCategory as $cat => $mats): ?>
           <optgroup label="<?= htmlspecialchars($cat) ?>">
             <?php foreach ($mats as $m): ?>
-            <option value="<?= $m['id'] ?>"><?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['unit']) ?>)</option>
+            <option value="<?= $m['id'] ?>" data-category="<?= htmlspecialchars($m['category'] ?? '') ?>"><?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['unit']) ?>)</option>
             <?php endforeach ?>
           </optgroup>
           <?php endforeach ?>
@@ -155,6 +156,10 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
       <div class="form-group">
         <label>Quantity</label>
         <input type="text" id="stock-qty" required placeholder="e.g. 50">
+      </div>
+      <div class="form-group" id="stock-bundle-wrap" style="display:none">
+        <label>Bundles <small style="font-weight:400;color:var(--muted)">— optional, for reinforcement</small></label>
+        <input type="text" id="stock-bundle-qty" placeholder="e.g. 5">
       </div>
       <div class="form-group">
         <label>Date</label>
@@ -179,7 +184,7 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
     </button>
     <div class="collapsible-body">
       <div class="form-group">
-        <label>Reinforcement quick-add <small style="font-weight:400;color:var(--muted)">— pick a diameter to fill the fields below</small></label>
+        <label>Reinforcement quick-add <small style="font-weight:400;color:var(--muted)">— pick a diameter to fill the fields below (tracked in kg; bundle count can be logged per entry)</small></label>
         <select id="rebar-diameter" onchange="applyRebarDiameter()">
           <option value="">— Choose diameter (optional) —</option>
           <?php foreach ($rebarDiameters as $d): ?>
@@ -263,11 +268,11 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
     <div class="stock-totals-grid" id="stock-totals-grid">
       <div class="stock-total-box total-in">
         <div class="total-label"><i class="fa-solid fa-arrow-down"></i> Total In</div>
-        <div class="total-value" id="total-in-value"><?= htmlspecialchars(formatStockTotals($totals['in'])) ?></div>
+        <div class="total-value" id="total-in-value"><?= htmlspecialchars(formatStockTotals($totals['in'], $totals['bundles_in'])) ?></div>
       </div>
       <div class="stock-total-box total-out">
         <div class="total-label"><i class="fa-solid fa-arrow-up"></i> Total Out</div>
-        <div class="total-value" id="total-out-value"><?= htmlspecialchars(formatStockTotals($totals['out'])) ?></div>
+        <div class="total-value" id="total-out-value"><?= htmlspecialchars(formatStockTotals($totals['out'], $totals['bundles_out'])) ?></div>
       </div>
     </div>
 
@@ -284,7 +289,7 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
             <td><?= htmlspecialchars($h['category'] ?? '—') ?></td>
             <td><?= htmlspecialchars($h['name']) ?></td>
             <td><span class="status-badge <?= htmlspecialchars($h['txn_type']) ?>"><?= strtoupper(htmlspecialchars($h['txn_type'])) ?></span></td>
-            <td><?= rtrim(rtrim(number_format((float)$h['quantity'], 2), '0'), '.') ?> <?= htmlspecialchars($h['unit']) ?></td>
+            <td><?= rtrim(rtrim(number_format((float)$h['quantity'], 2), '0'), '.') ?> <?= htmlspecialchars($h['unit']) ?><?php if (!empty($h['bundle_qty'])): ?><br><small style="color:var(--muted)"><?= rtrim(rtrim(number_format((float)$h['bundle_qty'], 2), '0'), '.') ?> bundle<?= (float)$h['bundle_qty'] == 1 ? '' : 's' ?></small><?php endif ?></td>
             <td class="wrap"><?= htmlspecialchars($h['notes'] ?? '—') ?></td>
             <td><button class="btn btn-ghost btn-sm" onclick="openEditStock(<?= (int)$h['id'] ?>)"><i class="fa-solid fa-pen"></i> Edit</button></td>
           </tr>
@@ -303,11 +308,11 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
     <h3>Edit Transaction</h3>
     <div class="form-group">
       <label>Material</label>
-      <select id="edit-material">
+      <select id="edit-material" onchange="onEditMaterialChange()">
         <?php foreach ($materialsByCategory as $cat => $mats): ?>
         <optgroup label="<?= htmlspecialchars($cat) ?>">
           <?php foreach ($mats as $m): ?>
-          <option value="<?= $m['id'] ?>"><?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['unit']) ?>)</option>
+          <option value="<?= $m['id'] ?>" data-category="<?= htmlspecialchars($m['category'] ?? '') ?>"><?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['unit']) ?>)</option>
           <?php endforeach ?>
         </optgroup>
         <?php endforeach ?>
@@ -323,6 +328,10 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
     <div class="form-group">
       <label>Quantity</label>
       <input type="text" id="edit-qty">
+    </div>
+    <div class="form-group" id="edit-bundle-wrap" style="display:none">
+      <label>Bundles <small style="font-weight:400;color:var(--muted)">— optional, for reinforcement</small></label>
+      <input type="text" id="edit-bundle-qty" placeholder="e.g. 5">
     </div>
     <div class="form-group">
       <label>Date</label>
@@ -349,9 +358,19 @@ const CSRF    = <?= json_encode($csrf) ?>;
 const PROJECT = <?= json_encode($projectId) ?>;
 let HISTORY = <?= json_encode(array_map(fn($h) => [
   'id' => (int)$h['id'], 'material_id' => (int)$h['material_id'], 'txn_type' => $h['txn_type'],
-  'quantity' => $h['quantity'], 'txn_date' => $h['txn_date'], 'notes' => $h['notes'],
+  'quantity' => $h['quantity'], 'bundle_qty' => $h['bundle_qty'], 'txn_date' => $h['txn_date'], 'notes' => $h['notes'],
 ], $history)) ?>;
 let _editId = null;
+
+// Show the "Bundles" field only when the selected material is Reinforcement
+function toggleBundleField(selectId, wrapId) {
+  const select = document.getElementById(selectId);
+  const opt    = select.options[select.selectedIndex];
+  const wrap   = document.getElementById(wrapId);
+  wrap.style.display = (opt && opt.dataset.category === 'Reinforcement') ? 'block' : 'none';
+}
+function onStockMaterialChange() { toggleBundleField('stock-material', 'stock-bundle-wrap'); }
+function onEditMaterialChange()  { toggleBundleField('edit-material', 'edit-bundle-wrap'); }
 
 function openEditStock(id) {
   const row = HISTORY.find(h => h.id === id);
@@ -360,9 +379,11 @@ function openEditStock(id) {
   document.getElementById('edit-material').value = row.material_id;
   document.querySelector(`input[name=edit_txn_type][value="${row.txn_type}"]`).checked = true;
   document.getElementById('edit-qty').value = row.quantity;
+  document.getElementById('edit-bundle-qty').value = row.bundle_qty || '';
   document.getElementById('edit-date').value = row.txn_date;
   document.getElementById('edit-date-display').value = row.txn_date;
   document.getElementById('edit-notes').value = row.notes || '';
+  onEditMaterialChange();
   document.getElementById('edit-mask').style.display = 'flex';
 }
 
@@ -376,12 +397,13 @@ async function saveStockEdit() {
   const material_id = document.getElementById('edit-material').value;
   const txn_type     = document.querySelector('input[name=edit_txn_type]:checked').value;
   const quantity     = document.getElementById('edit-qty').value.trim();
+  const bundle_qty   = document.getElementById('edit-bundle-qty').value.trim();
   const date         = document.getElementById('edit-date').value;
   const notes        = document.getElementById('edit-notes').value.trim();
 
   if (!quantity || isNaN(quantity) || Number(quantity) <= 0) { toast('Enter a valid quantity.', 'err'); return; }
 
-  const r = await post({ action: 'update_stock', stock_id: _editId, project_id: PROJECT, material_id, txn_type, quantity, date, notes });
+  const r = await post({ action: 'update_stock', stock_id: _editId, project_id: PROJECT, material_id, txn_type, quantity, bundle_qty, date, notes });
   if (r.success) {
     toast('Transaction updated.', 'ok');
     setTimeout(() => location.reload(), 600);
@@ -422,26 +444,32 @@ function escapeHtml(s) {
 }
 
 function renderHistoryRow(h) {
+  const bundleLine = h.bundle_qty
+    ? `<br><small style="color:var(--muted)">${formatQty(h.bundle_qty)} bundle${parseFloat(h.bundle_qty) === 1 ? '' : 's'}</small>`
+    : '';
   return `<tr>
     <td>${escapeHtml(h.txn_date)}</td>
     <td>${escapeHtml(h.category || '—')}</td>
     <td>${escapeHtml(h.name)}</td>
     <td><span class="status-badge ${h.txn_type}">${h.txn_type.toUpperCase()}</span></td>
-    <td>${formatQty(h.quantity)} ${escapeHtml(h.unit)}</td>
+    <td>${formatQty(h.quantity)} ${escapeHtml(h.unit)}${bundleLine}</td>
     <td class="wrap">${escapeHtml(h.notes || '—')}</td>
     <td><button class="btn btn-ghost btn-sm" onclick="openEditStock(${h.id})"><i class="fa-solid fa-pen"></i> Edit</button></td>
   </tr>`;
 }
 
 function renderTotals(totals) {
-  document.getElementById('total-in-value').textContent = formatTotalsBucket(totals.in);
-  document.getElementById('total-out-value').textContent = formatTotalsBucket(totals.out);
+  document.getElementById('total-in-value').textContent = formatTotalsBucket(totals.in, totals.bundles_in);
+  document.getElementById('total-out-value').textContent = formatTotalsBucket(totals.out, totals.bundles_out);
 }
 
-function formatTotalsBucket(byUnit) {
+function formatTotalsBucket(byUnit, bundleCount) {
   const keys = Object.keys(byUnit || {});
-  if (!keys.length) return '0';
-  return keys.map(unit => `${formatQty(byUnit[unit])} ${unit}`).join(', ');
+  let text = keys.length ? keys.map(unit => `${formatQty(byUnit[unit])} ${unit}`).join(', ') : '0';
+  if (bundleCount > 0) {
+    text += ` (${formatQty(bundleCount)} bundle${parseFloat(bundleCount) === 1 ? '' : 's'})`;
+  }
+  return text;
 }
 
 async function fetchAndRenderHistory() {
@@ -456,7 +484,7 @@ async function fetchAndRenderHistory() {
 
   HISTORY = r.rows.map(h => ({
     id: parseInt(h.id, 10), material_id: parseInt(h.material_id, 10), txn_type: h.txn_type,
-    quantity: h.quantity, txn_date: h.txn_date, notes: h.notes,
+    quantity: h.quantity, bundle_qty: h.bundle_qty, txn_date: h.txn_date, notes: h.notes,
   }));
 
   document.getElementById('history-tbody').innerHTML = r.rows.map(renderHistoryRow).join('');
@@ -498,13 +526,14 @@ async function logStock(e) {
   const material_id = document.getElementById('stock-material').value;
   const txn_type     = document.querySelector('input[name=txn_type]:checked').value;
   const quantity     = document.getElementById('stock-qty').value.trim();
+  const bundle_qty   = document.getElementById('stock-bundle-qty').value.trim();
   const date         = document.getElementById('stock-date').value;
   const notes        = document.getElementById('stock-notes').value.trim();
 
   if (!material_id) { toast('Select a material.', 'err'); return false; }
   if (!quantity || isNaN(quantity) || Number(quantity) <= 0) { toast('Enter a valid quantity.', 'err'); return false; }
 
-  const r = await post({ action: 'log_stock', project_id: PROJECT, material_id, txn_type, quantity, date, notes });
+  const r = await post({ action: 'log_stock', project_id: PROJECT, material_id, txn_type, quantity, bundle_qty, date, notes });
   if (r.success) {
     toast('Transaction logged.', 'ok');
     setTimeout(() => location.reload(), 600);

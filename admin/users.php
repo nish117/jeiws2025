@@ -8,14 +8,24 @@ if (!file_exists($credFile) || !isset($_SESSION['cms_auth'])) {
 require_once __DIR__ . '/functions.php';
 $csrf = csrfToken();
 
-$users = db()->query(
-    'SELECT u.id, u.username, u.full_name, u.is_active,
-            COUNT(up.project_id) AS project_count
-     FROM site_users u
-     LEFT JOIN user_projects up ON up.user_id = u.id
-     GROUP BY u.id
-     ORDER BY u.full_name'
-)->fetchAll();
+// Check the database connection explicitly so a bad config/db.php (e.g.
+// while pointing this at a new host) shows a clear message here instead
+// of a raw PHP fatal error.
+$dbError = null;
+$users   = [];
+try {
+    db()->query('SELECT 1');
+    $users = db()->query(
+        'SELECT u.id, u.username, u.full_name, u.is_active,
+                COUNT(up.project_id) AS project_count
+         FROM site_users u
+         LEFT JOIN user_projects up ON up.user_id = u.id
+         GROUP BY u.id
+         ORDER BY u.full_name'
+    )->fetchAll();
+} catch (Throwable $e) {
+    $dbError = $e->getMessage();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -51,7 +61,16 @@ $users = db()->query(
     <a href="user_edit.php" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Site User</a>
   </div>
 
-  <?php if (empty($users)): ?>
+  <?php if ($dbError !== null): ?>
+  <div class="alert alert-err" style="align-items:flex-start">
+    <i class="fa-solid fa-triangle-exclamation" style="margin-top:2px"></i>
+    <div>
+      <strong>Database connection failed.</strong> Site Users, Attendance and Materials Stock all depend on this
+      connection — check the host/dbname/username/password in <code>config/db.php</code>.
+      <div style="margin-top:6px;font-family:monospace;font-size:12px;opacity:.85"><?= htmlspecialchars($dbError) ?></div>
+    </div>
+  </div>
+  <?php elseif (empty($users)): ?>
   <div class="empty">
     <div class="empty-icon"><i class="fa-regular fa-address-card"></i></div>
     <h3>No site users yet</h3>

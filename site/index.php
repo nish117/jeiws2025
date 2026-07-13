@@ -25,6 +25,7 @@ $projects = getAssignedProjects(currentSiteUserId());
   </a>
   <div class="cms-nav-right">
     <span class="site-welcome">Hi, <?= htmlspecialchars($_SESSION['site_user_name']) ?></span>
+    <a href="change_password.php"><i class="fa-solid fa-key"></i> Password</a>
     <a href="logout.php" class="btn-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
   </div>
 </nav>

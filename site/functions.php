@@ -48,26 +48,40 @@ function getProjectTitle(string $projectId): ?string {
 // Sums IN vs OUT quantities from a set of stock_transaction rows, grouped
 // by unit — materials can be tracked in different units (bags, kg, cft),
 // so a single combined number would be misleading whenever more than one
-// unit is present in the result set.
-// Expects rows with 'txn_type' and 'quantity' + 'unit' keys.
+// unit is present in the result set. Also tallies the optional bundle_qty
+// (e.g. reinforcement bundles logged alongside the primary kg quantity) —
+// a plain sum is meaningful there since "bundle" is one consistent unit
+// regardless of which diameter it belongs to.
+// Expects rows with 'txn_type', 'quantity', 'unit', and 'bundle_qty' keys.
 function computeStockTotals(array $rows): array {
-    $totals = ['in' => [], 'out' => []];
+    $totals = ['in' => [], 'out' => [], 'bundles_in' => 0, 'bundles_out' => 0];
     foreach ($rows as $r) {
         $key  = $r['txn_type'] === 'out' ? 'out' : 'in';
         $unit = $r['unit'];
         $totals[$key][$unit] = ($totals[$key][$unit] ?? 0) + (float)$r['quantity'];
+        if (!empty($r['bundle_qty'])) {
+            $bundleKey = $r['txn_type'] === 'out' ? 'bundles_out' : 'bundles_in';
+            $totals[$bundleKey] += (float)$r['bundle_qty'];
+        }
     }
     return $totals;
 }
 
-// Renders a computeStockTotals() bucket (e.g. $totals['in']) as "50 bags, 12 cft"
-function formatStockTotals(array $byUnit): string {
-    if (empty($byUnit)) return '0';
-    $parts = [];
-    foreach ($byUnit as $unit => $qty) {
-        $parts[] = rtrim(rtrim(number_format($qty, 2), '0'), '.') . ' ' . $unit;
+// Renders a computeStockTotals() bucket (e.g. $totals['in']) as "50 bags, 12 cft",
+// optionally appending a bundle count, e.g. "270 kg (5 bundles)"
+function formatStockTotals(array $byUnit, float $bundleCount = 0): string {
+    $text = '0';
+    if (!empty($byUnit)) {
+        $parts = [];
+        foreach ($byUnit as $unit => $qty) {
+            $parts[] = rtrim(rtrim(number_format($qty, 2), '0'), '.') . ' ' . $unit;
+        }
+        $text = implode(', ', $parts);
     }
-    return implode(', ', $parts);
+    if ($bundleCount > 0) {
+        $text .= ' (' . rtrim(rtrim(number_format($bundleCount, 2), '0'), '.') . ' bundle' . ($bundleCount == 1 ? '' : 's') . ')';
+    }
+    return $text;
 }
 
 // ── CSRF (mirrors admin/functions.php) ──────────────────

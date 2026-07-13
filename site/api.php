@@ -95,6 +95,7 @@ switch ($action) {
         $materialId = (int)($_POST['material_id'] ?? 0);
         $txnType    = trim($_POST['txn_type']     ?? '');
         $quantity   = trim($_POST['quantity']     ?? '');
+        $bundleQty  = trim($_POST['bundle_qty']   ?? '');
         $date       = trim($_POST['date']         ?? '');
         $notes      = trim($_POST['notes']        ?? '');
 
@@ -102,14 +103,16 @@ switch ($action) {
         if ($materialId <= 0) { ok_err('Select a material'); }
         if (!in_array($txnType, ['in', 'out'], true)) { ok_err('Invalid transaction type'); }
         if (!is_numeric($quantity) || (float)$quantity <= 0) { ok_err('Quantity must be a positive number'); }
+        if ($bundleQty !== '' && (!is_numeric($bundleQty) || (float)$bundleQty <= 0)) { ok_err('Bundles must be a positive number'); }
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) { ok_err('Invalid date'); }
 
         db()->prepare(
-            'INSERT INTO materials_stock (project_id, material_id, txn_type, quantity, txn_date, notes, recorded_by)
-             VALUES (:pid, :mid, :type, :qty, :date, :notes, :uid)'
+            'INSERT INTO materials_stock (project_id, material_id, txn_type, quantity, bundle_qty, txn_date, notes, recorded_by)
+             VALUES (:pid, :mid, :type, :qty, :bqty, :date, :notes, :uid)'
         )->execute([
-            'pid' => $projectId, 'mid' => $materialId, 'type' => $txnType,
-            'qty' => $quantity, 'date' => $date, 'notes' => $notes ?: null, 'uid' => $userId,
+            'pid' => $projectId, 'mid' => $materialId, 'type' => $txnType, 'qty' => $quantity,
+            'bqty' => $bundleQty !== '' ? $bundleQty : null,
+            'date' => $date, 'notes' => $notes ?: null, 'uid' => $userId,
         ]);
 
         echo json_encode(['success' => true]);
@@ -123,6 +126,7 @@ switch ($action) {
         $materialId = (int)($_POST['material_id'] ?? 0);
         $txnType    = trim($_POST['txn_type']     ?? '');
         $quantity   = trim($_POST['quantity']     ?? '');
+        $bundleQty  = trim($_POST['bundle_qty']   ?? '');
         $date       = trim($_POST['date']         ?? '');
         $notes      = trim($_POST['notes']        ?? '');
 
@@ -131,16 +135,18 @@ switch ($action) {
         if ($materialId <= 0) { ok_err('Select a material'); }
         if (!in_array($txnType, ['in', 'out'], true)) { ok_err('Invalid transaction type'); }
         if (!is_numeric($quantity) || (float)$quantity <= 0) { ok_err('Quantity must be a positive number'); }
+        if ($bundleQty !== '' && (!is_numeric($bundleQty) || (float)$bundleQty <= 0)) { ok_err('Bundles must be a positive number'); }
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) { ok_err('Invalid date'); }
 
         // Scope the UPDATE to this project so a tampered stock_id can't touch another project's log
         $stmt = db()->prepare(
             'UPDATE materials_stock
-                SET material_id = :mid, txn_type = :type, quantity = :qty, txn_date = :date, notes = :notes
+                SET material_id = :mid, txn_type = :type, quantity = :qty, bundle_qty = :bqty, txn_date = :date, notes = :notes
               WHERE id = :sid AND project_id = :pid'
         );
         $stmt->execute([
             'mid' => $materialId, 'type' => $txnType, 'qty' => $quantity,
+            'bqty' => $bundleQty !== '' ? $bundleQty : null,
             'date' => $date, 'notes' => $notes ?: null, 'sid' => $stockId, 'pid' => $projectId,
         ]);
 
@@ -171,7 +177,7 @@ switch ($action) {
         if ($dateTo !== '')   { $where[] = 'ms.txn_date <= :dto';   $params['dto']   = $dateTo; }
 
         $stmt = db()->prepare(
-            'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.notes
+            'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes
              FROM materials_stock ms
              JOIN materials m ON m.id = ms.material_id
              WHERE ' . implode(' AND ', $where) . '

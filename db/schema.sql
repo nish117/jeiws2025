@@ -91,6 +91,8 @@ CREATE TABLE IF NOT EXISTS materials_stock (
     material_id INT           NOT NULL,
     txn_type    VARCHAR(3)    NOT NULL CHECK (txn_type IN ('in','out')),
     quantity    DECIMAL(12,2) NOT NULL CHECK (quantity > 0),
+    bundle_qty  DECIMAL(12,2) NULL,       -- optional secondary count, e.g. reinforcement
+                                            -- bundles alongside the primary kg quantity
     txn_date    DATE          NOT NULL,
     notes       TEXT,
     recorded_by INT,
