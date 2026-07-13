@@ -1,0 +1,123 @@
+/* Supplemental styles layered on top of ../admin/cms.css — the site
+   portal reuses the CMS's brand tokens, buttons, cards and forms. */
+
+.site-welcome{color:rgba(255,255,255,0.62);font-size:13px;font-weight:600}
+
+/* ── Project picker (dashboard) ──────────────────────── */
+.site-projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.site-project-card h3{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:14px}
+.site-project-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── Tabs (Attendance / Materials switch) ────────────── */
+.site-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.site-tab{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:100px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13.5px;font-weight:600;text-decoration:none;transition:background var(--t),border-color var(--t),color var(--t)}
+.site-tab:hover{border-color:var(--blue);color:var(--blue)}
+.site-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ── Date row ─────────────────────────────────────────── */
+.site-date-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.site-date-row .form-group{margin-bottom:0}
+.site-date-row input[type=date]{min-width:170px}
+
+/* ── YYYY-MM-DD date field (native picker paired with a display we control) ── */
+.date-input-wrap{position:relative;max-width:220px}
+.date-display-input{padding-right:40px!important;cursor:pointer;background:var(--surface)}
+.date-input-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:14px}
+.date-native-hidden{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%;height:100%}
+
+/* ── Worker attendance list ──────────────────────────── */
+.worker-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-2)}
+.worker-row:last-child{border-bottom:none}
+.worker-row-info{flex:1;min-width:0}
+.worker-row-name{font-size:14px;font-weight:700;color:var(--navy)}
+.worker-row-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.worker-row select{width:150px;min-height:38px;padding:8px 10px;flex-shrink:0}
+.worker-row select.status-present{border-color:var(--success);color:var(--success)}
+.worker-row select.status-absent{border-color:var(--danger);color:var(--danger)}
+.worker-row select.status-half_day{border-color:var(--warn);color:var(--warn)}
+
+/* ── Add-worker / add-material inline form ───────────── */
+.inline-add-form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end}
+@media(max-width:760px){.inline-add-form{grid-template-columns:1fr 1fr}}
+.inline-add-form .form-group{margin-bottom:0}
+
+/* ── Status / type badges ─────────────────────────────── */
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px}
+.status-badge.present{background:#E8F7EF;color:#1A9966}
+.status-badge.absent{background:#FDE8E8;color:#C0392B}
+.status-badge.half_day{background:#FFF7ED;color:var(--warn)}
+.status-badge.in{background:#E8F7EF;color:#1A9966}
+.status-badge.out{background:#FDE8E8;color:#C0392B}
+
+/* ── Simple data table ────────────────────────────────── */
+.site-table-wrap{overflow-x:auto}
+.site-table{width:100%;border-collapse:collapse;font-size:13px}
+.site-table th{text-align:left;padding:9px 12px;background:#F6F9FC;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;font-size:11px;border-bottom:2px solid var(--border-2);white-space:nowrap}
+.site-table td{padding:9px 12px;border-bottom:1px solid var(--border-2);color:var(--text);white-space:nowrap}
+.site-table tr:hover td{background:#F8FAFC}
+.site-table td.wrap{white-space:normal}
+
+/* ── Stock balance cards ──────────────────────────────── */
+.stock-balance-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:8px}
+.stock-balance-card{background:var(--bg);border:1px solid var(--border-2);border-radius:var(--r);padding:16px}
+.stock-balance-card .mat-category{font-size:10px;font-weight:700;color:var(--gold-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.stock-balance-card .mat-name{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:6px}
+.stock-balance-card .mat-qty{font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:var(--blue)}
+.stock-balance-card .mat-unit{font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
+
+/* ── Total In / Total Out (respects the current filter) ──── */
+.stock-totals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.stock-total-box{border-radius:var(--r);padding:16px 18px;border:1.5px solid var(--border-2)}
+.stock-total-box.total-in{background:#F0FBF4;border-color:#C6F6D5}
+.stock-total-box.total-out{background:#FFF5F5;border-color:#FED7D7}
+.stock-total-box .total-label{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px}
+.stock-total-box.total-in .total-label{color:#1A9966}
+.stock-total-box.total-out .total-label{color:#C0392B}
+.stock-total-box .total-value{font-family:'Sora',sans-serif;font-size:1.3rem;font-weight:800;color:var(--navy);word-break:break-word}
+
+.txn-type-toggle{display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;width:fit-content}
+.txn-type-toggle label{display:flex;align-items:center;gap:6px;padding:9px 18px;cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);transition:background var(--t),color var(--t)}
+.txn-type-toggle input{position:absolute;opacity:0;width:1px;height:1px}
+.txn-type-toggle input:checked + span{color:inherit}
+.txn-type-toggle label:has(input:checked){background:var(--blue);color:#fff}
+.txn-type-toggle label:first-child{border-right:1.5px solid var(--border)}
+
+/* ── Collapsible secondary sections (Add Worker/Material, History) ──
+   Collapsed by default on mobile via JS so the primary recording
+   form is reachable without scrolling past secondary tools. ──── */
+.collapsible-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:transparent;border:none;cursor:pointer;text-align:left;padding:0;font:inherit;color:inherit;min-height:44px}
+.collapsible-toggle .collapse-icon{transition:transform var(--t);color:var(--muted);font-size:13px;flex-shrink:0}
+.collapsible.is-open .collapse-icon{transform:rotate(180deg)}
+.collapsible-body{display:none;padding-top:18px}
+.collapsible.is-open .collapsible-body{display:block}
+
+/* ── Sticky mobile save bar ───────────────────────────── */
+.mobile-save-bar{display:none}
+
+/* ── Mobile tightening ────────────────────────────────── */
+@media(max-width:640px){
+  .site-welcome{display:none}
+  .cms-nav{padding:0 14px}
+  .cms-main{padding:18px 14px 24px}
+  .card{padding:18px}
+  .page-hdr h1{font-size:20px}
+  .site-tabs{margin-bottom:16px}
+  .worker-row select{width:128px}
+  .stock-totals-grid,.stock-balance-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+
+  /* Fixed bottom action bar for long forms (attendance worker list).
+     Only shown while the source card is actually in view (via
+     IntersectionObserver in site.js) — a fixed bar covers the bottom
+     of the viewport at every scroll position, not just the page end,
+     so it must hide once the user scrolls into later cards or it
+     would occlude their content (e.g. the expanded Add Worker form). */
+  .mobile-save-bar{
+    display:none;position:fixed;left:0;right:0;bottom:0;z-index:150;
+    background:var(--surface);border-top:1px solid var(--border);
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    box-shadow:0 -6px 20px rgba(12,30,45,0.1);
+  }
+  .mobile-save-bar.is-visible{display:block}
+  .mobile-save-bar .btn{width:100%;justify-content:center}
+  body.has-mobile-save-bar{padding-bottom:78px}
+}

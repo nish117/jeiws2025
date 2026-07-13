@@ -28,6 +28,7 @@ $csrf = csrfToken();
   <div class="cms-nav-right">
     <a href="index.php" class="active">Projects</a>
     <a href="analytics.php">Analytics</a>
+    <a href="users.php">Site Users</a>
     <a href="../index.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Site</a>
     <a href="logout.php" class="btn-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
   </div>

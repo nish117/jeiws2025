@@ -1,6 +1,8 @@
 <?php
 defined('CMS_LOADED') or die('Direct access denied.');
 
+require_once __DIR__ . '/../lib/Db.php';
+
 define('DATA_FILE',   __DIR__ . '/../data/projects.json');
 define('PROJECTS_JS', __DIR__ . '/../src/js/projects.js');
 define('IMG_BASE',    __DIR__ . '/../assets/project-images');
@@ -284,6 +286,30 @@ function processImage(string $tmpPath, string $dest, string $mime): bool {
 
     imagedestroy($dst);
     return $ok;
+}
+
+// ── MySQL project mirror (best-effort; JSON stays source of truth) ──
+// The site/ portal (labour attendance & materials stock) foreign-keys
+// against a lightweight projects(id, title) table so it doesn't need
+// to read/parse projects.json. Keep it in sync on every save/delete.
+function syncProjectToDb(string $id, string $title, bool $active = true): void {
+    try {
+        db()->prepare(
+            'INSERT INTO projects (id, title, is_active, updated_at)
+             VALUES (:id, :title, :active, NOW())
+             ON DUPLICATE KEY UPDATE title = VALUES(title), is_active = VALUES(is_active), updated_at = NOW()'
+        )->execute(['id' => $id, 'title' => $title, 'active' => $active ? 1 : 0]);
+    } catch (Throwable $e) {
+        error_log('syncProjectToDb failed: ' . $e->getMessage());
+    }
+}
+
+function removeProjectFromDb(string $id): void {
+    try {
+        db()->prepare('DELETE FROM projects WHERE id = :id')->execute(['id' => $id]);
+    } catch (Throwable $e) {
+        error_log('removeProjectFromDb failed: ' . $e->getMessage());
+    }
 }
 
 // ── CSRF ─────────────────────────────────────────────────

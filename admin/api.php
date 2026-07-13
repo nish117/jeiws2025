@@ -45,6 +45,7 @@ switch ($action) {
         }
 
         saveProjects($projects);
+        syncProjectToDb($id, $title, !$isDraft);
         echo json_encode(['success' => true, 'project_id' => $id]);
         break;
     }
@@ -190,6 +191,7 @@ switch ($action) {
         deleteDir(IMG_BASE . '/' . $id);
 
         saveProjects($projects);
+        removeProjectFromDb($id);
         echo json_encode(['success' => true]);
         break;
     }
@@ -212,6 +214,86 @@ switch ($action) {
         $projects[$idx]['gallery'] = array_merge($clean, $rest);
 
         saveProjects($projects);
+        echo json_encode(['success' => true]);
+        break;
+    }
+
+    /* ── Create or update a site user ───────────── */
+    case 'save_site_user': {
+        $userId   = trim($_POST['user_id'] ?? '');
+        $fullName = trim($_POST['full_name'] ?? '');
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $isActive = (isset($_POST['is_active']) && $_POST['is_active'] === '1') ? 1 : 0;
+
+        if (!$fullName || !$username) { ok_err('Full name and username are required'); }
+
+        try {
+            if ($userId === '') {
+                if (strlen($password) < 8) { ok_err('Password must be at least 8 characters'); }
+                $pdo  = db();
+                $stmt = $pdo->prepare(
+                    'INSERT INTO site_users (username, password_hash, full_name, is_active)
+                     VALUES (:u, :p, :f, 1)'
+                );
+                $stmt->execute(['u' => $username, 'p' => password_hash($password, PASSWORD_BCRYPT), 'f' => $fullName]);
+                $newId = $pdo->lastInsertId();
+                echo json_encode(['success' => true, 'user_id' => $newId]);
+            } else {
+                if ($password !== '') {
+                    if (strlen($password) < 8) { ok_err('Password must be at least 8 characters'); }
+                    db()->prepare(
+                        'UPDATE site_users SET username = :u, full_name = :f, is_active = :a,
+                                                password_hash = :p, updated_at = NOW() WHERE id = :id'
+                    )->execute(['u' => $username, 'f' => $fullName, 'a' => $isActive,
+                                 'p' => password_hash($password, PASSWORD_BCRYPT), 'id' => $userId]);
+                } else {
+                    db()->prepare(
+                        'UPDATE site_users SET username = :u, full_name = :f, is_active = :a,
+                                                updated_at = NOW() WHERE id = :id'
+                    )->execute(['u' => $username, 'f' => $fullName, 'a' => $isActive, 'id' => $userId]);
+                }
+                echo json_encode(['success' => true, 'user_id' => (int)$userId]);
+            }
+        } catch (PDOException $e) {
+            if (($e->errorInfo[1] ?? null) === 1062) { ok_err('That username is already taken'); }
+            throw $e;
+        }
+        break;
+    }
+
+    /* ── Set a user's project assignments ───────── */
+    case 'set_user_projects': {
+        $userId     = trim($_POST['user_id'] ?? '');
+        $projectIds = $_POST['project_ids'] ?? [];
+        if (!$userId) { ok_err('Invalid user'); }
+        if (!is_array($projectIds)) { $projectIds = []; }
+
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare('DELETE FROM user_projects WHERE user_id = :uid')->execute(['uid' => $userId]);
+            $ins = $pdo->prepare('INSERT IGNORE INTO user_projects (user_id, project_id) VALUES (:uid, :pid)');
+            foreach ($projectIds as $pid) {
+                $pid = trim((string)$pid);
+                if ($pid === '') continue;
+                $ins->execute(['uid' => $userId, 'pid' => $pid]);
+            }
+            $pdo->commit();
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            ok_err('One or more selected projects are not yet synced — try again in a moment');
+        }
+
+        echo json_encode(['success' => true]);
+        break;
+    }
+
+    /* ── Delete a site user ──────────────────────── */
+    case 'delete_site_user': {
+        $userId = trim($_POST['user_id'] ?? '');
+        if (!$userId) { ok_err('Invalid user'); }
+        db()->prepare('DELETE FROM site_users WHERE id = :id')->execute(['id' => $userId]);
         echo json_encode(['success' => true]);
         break;
     }
