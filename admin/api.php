@@ -298,6 +298,61 @@ switch ($action) {
         break;
     }
 
+    /* ── Add a material to the global catalog ────── */
+    case 'save_material': {
+        $name     = trim($_POST['name'] ?? '');
+        $unit     = trim($_POST['unit'] ?? '');
+        $category = trim($_POST['category'] ?? '');
+
+        if ($name === '' || $unit === '') { ok_err('Material name and unit are required'); }
+
+        $pdo  = db();
+        $stmt = $pdo->prepare(
+            'INSERT INTO materials (name, unit, category) VALUES (:name, :unit, :cat)
+             ON DUPLICATE KEY UPDATE category = VALUES(category), id = LAST_INSERT_ID(id)'
+        );
+        $stmt->execute(['name' => $name, 'unit' => $unit, 'cat' => $category ?: null]);
+
+        echo json_encode(['success' => true, 'material_id' => $pdo->lastInsertId()]);
+        break;
+    }
+
+    /* ── Show/hide a material from the site portal ── */
+    case 'toggle_material_active': {
+        $materialId = (int)($_POST['material_id'] ?? 0);
+        if ($materialId <= 0) { ok_err('Invalid material'); }
+
+        $stmt = db()->prepare('UPDATE materials SET is_active = NOT is_active WHERE id = :id');
+        $stmt->execute(['id' => $materialId]);
+        if ($stmt->rowCount() === 0) { ok_err('Material not found'); }
+
+        $isActive = db()->prepare('SELECT is_active FROM materials WHERE id = :id');
+        $isActive->execute(['id' => $materialId]);
+
+        echo json_encode(['success' => true, 'is_active' => (bool)$isActive->fetchColumn()]);
+        break;
+    }
+
+    /* ── Delete a material (only if never used in a transaction) ── */
+    case 'delete_material': {
+        $materialId = (int)($_POST['material_id'] ?? 0);
+        if ($materialId <= 0) { ok_err('Invalid material'); }
+
+        // Server-side guard — deleting a material would CASCADE-delete every
+        // stock transaction ever logged against it, across every project.
+        // The UI already hides this option once a material has history, but
+        // enforce it here too in case that check is ever bypassed.
+        $count = db()->prepare('SELECT COUNT(*) FROM materials_stock WHERE material_id = :id');
+        $count->execute(['id' => $materialId]);
+        if ((int)$count->fetchColumn() > 0) {
+            ok_err('This material has stock transactions logged against it — hide it instead of deleting');
+        }
+
+        db()->prepare('DELETE FROM materials WHERE id = :id')->execute(['id' => $materialId]);
+        echo json_encode(['success' => true]);
+        break;
+    }
+
     default:
         echo json_encode(['error' => 'Unknown action']);
 }

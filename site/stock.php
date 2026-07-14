@@ -53,9 +53,11 @@ if ($filterFrom !== '')   { $where[] = 'ms.txn_date >= :dfrom';    $params['dfro
 if ($filterTo !== '')     { $where[] = 'ms.txn_date <= :dto';      $params['dto']   = $filterTo; }
 
 $stmt = db()->prepare(
-    'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes
+    'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
+            u.username AS recorded_by_username
      FROM materials_stock ms
      JOIN materials m ON m.id = ms.material_id
+     LEFT JOIN site_users u ON u.id = ms.recorded_by
      WHERE ' . implode(' AND ', $where) . '
      ORDER BY ms.txn_date DESC, ms.id DESC
      LIMIT 200'
@@ -64,10 +66,6 @@ $stmt->execute($params);
 $history = $stmt->fetchAll();
 $hasFilters = $filterMaterial > 0 || $filterType !== '' || $filterFrom !== '' || $filterTo !== '';
 $totals = computeStockTotals($history);
-
-// Common construction material categories, offered as suggestions (free text still allowed)
-$categorySuggestions = ['Reinforcement', 'Cement', 'Sand', 'Aggregate', 'Bricks & Blocks', 'Electrical', 'Plumbing', 'Paint & Finishing', 'Other'];
-$rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -145,6 +143,7 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
           </optgroup>
           <?php endforeach ?>
         </select>
+        <small style="color:var(--muted);display:block;margin-top:6px">Don't see the material you need? Ask your admin to add it to the catalog.</small>
       </div>
       <div class="form-group">
         <label>Type</label>
@@ -175,45 +174,6 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
       </div>
       <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Log Transaction</button>
     </form>
-  </div>
-
-  <div class="card collapsible">
-    <button type="button" class="card-title collapsible-toggle" onclick="toggleCollapse(this)">
-      Add Material to Catalog
-      <i class="fa-solid fa-chevron-down collapse-icon"></i>
-    </button>
-    <div class="collapsible-body">
-      <div class="form-group">
-        <label>Reinforcement quick-add <small style="font-weight:400;color:var(--muted)">— pick a diameter to fill the fields below (tracked in kg; bundle count can be logged per entry)</small></label>
-        <select id="rebar-diameter" onchange="applyRebarDiameter()">
-          <option value="">— Choose diameter (optional) —</option>
-          <?php foreach ($rebarDiameters as $d): ?>
-          <option value="<?= $d ?>"><?= $d ?> mm</option>
-          <?php endforeach ?>
-        </select>
-      </div>
-
-      <form class="inline-add-form" onsubmit="return addMaterial(event)">
-        <div class="form-group">
-          <label>Material name</label>
-          <input type="text" id="new-mat-name" required placeholder="e.g. Reinforcement 12mm">
-        </div>
-        <div class="form-group">
-          <label>Category</label>
-          <input type="text" id="new-mat-category" list="category-suggestions" placeholder="e.g. Reinforcement">
-          <datalist id="category-suggestions">
-            <?php foreach ($categorySuggestions as $c): ?>
-            <option value="<?= htmlspecialchars($c) ?>">
-            <?php endforeach ?>
-          </datalist>
-        </div>
-        <div class="form-group">
-          <label>Unit</label>
-          <input type="text" id="new-mat-unit" required placeholder="e.g. bags, kg, cft">
-        </div>
-        <button type="submit" class="btn btn-ghost"><i class="fa-solid fa-plus"></i> Add</button>
-      </form>
-    </div>
   </div>
 
   <div class="card collapsible">
@@ -281,7 +241,7 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
     </div>
     <div class="site-table-wrap" id="history-table-wrap" style="<?= empty($history) ? 'display:none' : '' ?>">
       <table class="site-table">
-        <thead><tr><th>Date</th><th>Category</th><th>Material</th><th>Type</th><th>Qty</th><th>Notes</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Category</th><th>Material</th><th>Type</th><th>Qty</th><th>User</th><th>Notes</th><th></th></tr></thead>
         <tbody id="history-tbody">
         <?php foreach ($history as $h): ?>
           <tr>
@@ -290,6 +250,7 @@ $rebarDiameters = [6, 8, 10, 12, 16, 20, 25, 32];
             <td><?= htmlspecialchars($h['name']) ?></td>
             <td><span class="status-badge <?= htmlspecialchars($h['txn_type']) ?>"><?= strtoupper(htmlspecialchars($h['txn_type'])) ?></span></td>
             <td><?= rtrim(rtrim(number_format((float)$h['quantity'], 2), '0'), '.') ?> <?= htmlspecialchars($h['unit']) ?><?php if (!empty($h['bundle_qty'])): ?><br><small style="color:var(--muted)"><?= rtrim(rtrim(number_format((float)$h['bundle_qty'], 2), '0'), '.') ?> bundle<?= (float)$h['bundle_qty'] == 1 ? '' : 's' ?></small><?php endif ?></td>
+            <td><?= htmlspecialchars($h['recorded_by_username'] ?? '—') ?></td>
             <td class="wrap"><?= htmlspecialchars($h['notes'] ?? '—') ?></td>
             <td><button class="btn btn-ghost btn-sm" onclick="openEditStock(<?= (int)$h['id'] ?>)"><i class="fa-solid fa-pen"></i> Edit</button></td>
           </tr>
@@ -453,6 +414,7 @@ function renderHistoryRow(h) {
     <td>${escapeHtml(h.name)}</td>
     <td><span class="status-badge ${h.txn_type}">${h.txn_type.toUpperCase()}</span></td>
     <td>${formatQty(h.quantity)} ${escapeHtml(h.unit)}${bundleLine}</td>
+    <td>${escapeHtml(h.recorded_by_username || '—')}</td>
     <td class="wrap">${escapeHtml(h.notes || '—')}</td>
     <td><button class="btn btn-ghost btn-sm" onclick="openEditStock(${h.id})"><i class="fa-solid fa-pen"></i> Edit</button></td>
   </tr>`;
@@ -539,33 +501,6 @@ async function logStock(e) {
     setTimeout(() => location.reload(), 600);
   } else {
     toast(r.error || 'Failed to log transaction.', 'err');
-  }
-  return false;
-}
-
-function applyRebarDiameter() {
-  const size = document.getElementById('rebar-diameter').value;
-  if (!size) return;
-  document.getElementById('new-mat-name').value = `Reinforcement ${size}mm`;
-  document.getElementById('new-mat-category').value = 'Reinforcement';
-  const unitField = document.getElementById('new-mat-unit');
-  if (!unitField.value) unitField.value = 'kg';
-}
-
-async function addMaterial(e) {
-  e.preventDefault();
-  const name     = document.getElementById('new-mat-name').value.trim();
-  const category = document.getElementById('new-mat-category').value.trim();
-  const unit     = document.getElementById('new-mat-unit').value.trim();
-  if (!name || !unit) { toast('Enter both name and unit.', 'err'); return false; }
-
-  const r = await post({ action: 'add_material', name, unit, category });
-  if (r.success) {
-    toast('Material added.', 'ok');
-    document.getElementById('rebar-diameter').value = '';
-    setTimeout(() => location.reload(), 500);
-  } else {
-    toast(r.error || 'Failed to add material.', 'err');
   }
   return false;
 }

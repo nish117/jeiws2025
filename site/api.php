@@ -70,25 +70,6 @@ switch ($action) {
         break;
     }
 
-    /* ── Add a material to the global catalog ───────────── */
-    case 'add_material': {
-        $name     = trim($_POST['name'] ?? '');
-        $unit     = trim($_POST['unit'] ?? '');
-        $category = trim($_POST['category'] ?? '');
-
-        if ($name === '' || $unit === '') { ok_err('Material name and unit are required'); }
-
-        $pdo  = db();
-        $stmt = $pdo->prepare(
-            'INSERT INTO materials (name, unit, category) VALUES (:name, :unit, :cat)
-             ON DUPLICATE KEY UPDATE category = VALUES(category), id = LAST_INSERT_ID(id)'
-        );
-        $stmt->execute(['name' => $name, 'unit' => $unit, 'cat' => $category ?: null]);
-
-        echo json_encode(['success' => true, 'material_id' => $pdo->lastInsertId()]);
-        break;
-    }
-
     /* ── Log a stock movement (IN / OUT) ─────────────────── */
     case 'log_stock': {
         $projectId  = trim($_POST['project_id']  ?? '');
@@ -177,9 +158,11 @@ switch ($action) {
         if ($dateTo !== '')   { $where[] = 'ms.txn_date <= :dto';   $params['dto']   = $dateTo; }
 
         $stmt = db()->prepare(
-            'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes
+            'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
+                    u.username AS recorded_by_username
              FROM materials_stock ms
              JOIN materials m ON m.id = ms.material_id
+             LEFT JOIN site_users u ON u.id = ms.recorded_by
              WHERE ' . implode(' AND ', $where) . '
              ORDER BY ms.txn_date DESC, ms.id DESC
              LIMIT 200'
