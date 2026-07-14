@@ -91,9 +91,11 @@ $history = $stmt->fetchAll();
         <label>Date</label>
         <div class="date-input-wrap">
           <input type="text" id="att-date-display" class="date-display-input" readonly placeholder="YYYY-MM-DD" value="<?= htmlspecialchars($date) ?>">
-          <input type="date" name="date" id="att-date-native" class="date-native-hidden" value="<?= htmlspecialchars($date) ?>" onchange="this.form.submit()">
+          <input type="date" name="date" id="att-date-native" class="date-native-hidden" value="<?= htmlspecialchars($date) ?>">
           <i class="fa-solid fa-calendar-days date-input-icon"></i>
         </div>
+        <span class="bs-date-label">Nepali date (B.S.)</span>
+        <div id="att-date-bs" class="bs-datepicker-wrap"></div>
       </div>
     </form>
 
@@ -190,6 +192,7 @@ $history = $stmt->fetchAll();
 
 <div class="toasts" id="toasts"></div>
 
+<script src="nepali-date.js"></script>
 <script src="site.js"></script>
 <script>
 const CSRF      = <?= json_encode($csrf) ?>;
@@ -214,6 +217,14 @@ function setupDateField(displayId, nativeId) {
   });
 }
 setupDateField('att-date-display', 'att-date-native');
+
+attachNepaliDatePicker({
+  adNative:  document.getElementById('att-date-native'),
+  adDisplay: document.getElementById('att-date-display'),
+  wrapper:   document.getElementById('att-date-bs'),
+  onChange:  () => document.getElementById('date-form').submit(),
+});
+document.getElementById('att-date-native').addEventListener('change', () => document.getElementById('date-form').submit());
 
 async function saveAttendance() {
   const btn = document.getElementById('save-btn');

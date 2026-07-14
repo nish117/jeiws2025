@@ -11,6 +11,7 @@ if (!file_exists($credFile) || !isset($_SESSION['cms_auth'])) {
 }
 
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/../lib/NepaliDate.php';
 
 // All mutating requests must carry a valid CSRF token
 verifyCsrf();
@@ -349,6 +350,41 @@ switch ($action) {
         }
 
         db()->prepare('DELETE FROM materials WHERE id = :id')->execute(['id' => $materialId]);
+        echo json_encode(['success' => true]);
+        break;
+    }
+
+    /* ── Edit a labour attendance record ─────────── */
+    case 'update_attendance': {
+        $attendanceId = (int)($_POST['attendance_id'] ?? 0);
+        $status       = trim($_POST['status'] ?? '');
+        $date         = trim($_POST['date']   ?? '');
+        $notes        = trim($_POST['notes']  ?? '');
+
+        if ($attendanceId <= 0) { ok_err('Invalid attendance record'); }
+        if (!in_array($status, ['present', 'absent', 'half_day'], true)) { ok_err('Invalid status'); }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) { ok_err('Invalid date'); }
+
+        $exists = db()->prepare('SELECT 1 FROM labour_attendance WHERE id = :id');
+        $exists->execute(['id' => $attendanceId]);
+        if (!$exists->fetchColumn()) { ok_err('Attendance record not found'); }
+
+        try {
+            db()->prepare(
+                'UPDATE labour_attendance
+                    SET status = :status, attendance_date = :date, nepali_date = :ndate, notes = :notes
+                  WHERE id = :id'
+            )->execute([
+                'status' => $status, 'date' => $date, 'ndate' => NepaliDate::adToBs($date),
+                'notes' => $notes ?: null, 'id' => $attendanceId,
+            ]);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000') {
+                ok_err('This worker already has an attendance record for that date on this project');
+            }
+            throw $e;
+        }
+
         echo json_encode(['success' => true]);
         break;
     }

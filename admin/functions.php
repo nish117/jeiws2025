@@ -312,6 +312,48 @@ function removeProjectFromDb(string $id): void {
     }
 }
 
+// ── Stock log helpers (mirrors site/functions.php) ──────
+// Sums IN vs OUT quantities from a set of materials_stock rows, grouped
+// by category then unit — materials can be tracked in different units
+// (bags, kg, cft), so a single combined number would be misleading
+// whenever more than one is present; grouping by category first also
+// makes each line meaningful on its own (e.g. "Reinforcement: 100 kg"
+// instead of an unlabeled "100 kg" that could be any material).
+function computeStockTotals(array $rows): array {
+    $totals = ['in' => [], 'out' => []];
+    foreach ($rows as $r) {
+        $key  = $r['txn_type'] === 'out' ? 'out' : 'in';
+        $cat  = ($r['category'] ?? '') !== '' ? $r['category'] : 'Other';
+        $unit = $r['unit'];
+        if (!isset($totals[$key][$cat])) {
+            $totals[$key][$cat] = ['units' => [], 'bundles' => 0];
+        }
+        $totals[$key][$cat]['units'][$unit] = ($totals[$key][$cat]['units'][$unit] ?? 0) + (float)$r['quantity'];
+        if (!empty($r['bundle_qty'])) {
+            $totals[$key][$cat]['bundles'] += (float)$r['bundle_qty'];
+        }
+    }
+    return $totals;
+}
+
+// Renders a computeStockTotals() bucket (e.g. $totals['in']) into one
+// display line per category, e.g. ['category' => 'Reinforcement', 'text' => '100 kg (10 bundles)']
+function formatStockTotals(array $byCategory): array {
+    $lines = [];
+    foreach ($byCategory as $cat => $data) {
+        $parts = [];
+        foreach ($data['units'] as $unit => $qty) {
+            $parts[] = rtrim(rtrim(number_format($qty, 2), '0'), '.') . ' ' . $unit;
+        }
+        $text = implode(', ', $parts);
+        if ($data['bundles'] > 0) {
+            $text .= ' (' . rtrim(rtrim(number_format($data['bundles'], 2), '0'), '.') . ' bundle' . ($data['bundles'] == 1 ? '' : 's') . ')';
+        }
+        $lines[] = ['category' => $cat, 'text' => $text];
+    }
+    return $lines;
+}
+
 // ── CSRF ─────────────────────────────────────────────────
 function csrfToken(): string {
     if (empty($_SESSION['csrf_token'])) {

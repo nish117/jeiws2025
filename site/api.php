@@ -3,6 +3,7 @@ session_start();
 header('Content-Type: application/json');
 define('SITE_LOADED', 1);
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/../lib/NepaliDate.php';
 
 if (empty($_SESSION['site_user_id'])) {
     http_response_code(401);
@@ -27,17 +28,18 @@ switch ($action) {
         if (!is_array($statuses) || !$statuses) { ok_err('No attendance data submitted'); }
 
         $allowed = ['present', 'absent', 'half_day'];
+        $nepaliDate = NepaliDate::adToBs($date);
         $stmt = db()->prepare(
-            'INSERT INTO labour_attendance (project_id, worker_id, attendance_date, status, recorded_by)
-             VALUES (:pid, :wid, :date, :status, :uid)
-             ON DUPLICATE KEY UPDATE status = VALUES(status), recorded_by = VALUES(recorded_by)'
+            'INSERT INTO labour_attendance (project_id, worker_id, attendance_date, nepali_date, status, recorded_by)
+             VALUES (:pid, :wid, :date, :ndate, :status, :uid)
+             ON DUPLICATE KEY UPDATE status = VALUES(status), nepali_date = VALUES(nepali_date), recorded_by = VALUES(recorded_by)'
         );
 
         $saved = 0;
         foreach ($statuses as $workerId => $status) {
             $workerId = (int)$workerId;
             if ($workerId <= 0 || !in_array($status, $allowed, true)) continue;
-            $stmt->execute(['pid' => $projectId, 'wid' => $workerId, 'date' => $date, 'status' => $status, 'uid' => $userId]);
+            $stmt->execute(['pid' => $projectId, 'wid' => $workerId, 'date' => $date, 'ndate' => $nepaliDate, 'status' => $status, 'uid' => $userId]);
             $saved++;
         }
 
@@ -88,12 +90,12 @@ switch ($action) {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) { ok_err('Invalid date'); }
 
         db()->prepare(
-            'INSERT INTO materials_stock (project_id, material_id, txn_type, quantity, bundle_qty, txn_date, notes, recorded_by)
-             VALUES (:pid, :mid, :type, :qty, :bqty, :date, :notes, :uid)'
+            'INSERT INTO materials_stock (project_id, material_id, txn_type, quantity, bundle_qty, txn_date, nepali_date, notes, recorded_by)
+             VALUES (:pid, :mid, :type, :qty, :bqty, :date, :ndate, :notes, :uid)'
         )->execute([
             'pid' => $projectId, 'mid' => $materialId, 'type' => $txnType, 'qty' => $quantity,
             'bqty' => $bundleQty !== '' ? $bundleQty : null,
-            'date' => $date, 'notes' => $notes ?: null, 'uid' => $userId,
+            'date' => $date, 'ndate' => NepaliDate::adToBs($date), 'notes' => $notes ?: null, 'uid' => $userId,
         ]);
 
         echo json_encode(['success' => true]);
@@ -122,13 +124,13 @@ switch ($action) {
         // Scope the UPDATE to this project so a tampered stock_id can't touch another project's log
         $stmt = db()->prepare(
             'UPDATE materials_stock
-                SET material_id = :mid, txn_type = :type, quantity = :qty, bundle_qty = :bqty, txn_date = :date, notes = :notes
+                SET material_id = :mid, txn_type = :type, quantity = :qty, bundle_qty = :bqty, txn_date = :date, nepali_date = :ndate, notes = :notes
               WHERE id = :sid AND project_id = :pid'
         );
         $stmt->execute([
             'mid' => $materialId, 'type' => $txnType, 'qty' => $quantity,
             'bqty' => $bundleQty !== '' ? $bundleQty : null,
-            'date' => $date, 'notes' => $notes ?: null, 'sid' => $stockId, 'pid' => $projectId,
+            'date' => $date, 'ndate' => NepaliDate::adToBs($date), 'notes' => $notes ?: null, 'sid' => $stockId, 'pid' => $projectId,
         ]);
 
         if ($stmt->rowCount() === 0) { ok_err('Transaction not found for this project'); }
@@ -158,7 +160,7 @@ switch ($action) {
         if ($dateTo !== '')   { $where[] = 'ms.txn_date <= :dto';   $params['dto']   = $dateTo; }
 
         $stmt = db()->prepare(
-            'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
+            'SELECT ms.id, ms.material_id, ms.txn_date, ms.nepali_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
                     u.username AS recorded_by_username
              FROM materials_stock ms
              JOIN materials m ON m.id = ms.material_id

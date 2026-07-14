@@ -53,7 +53,7 @@ if ($filterFrom !== '')   { $where[] = 'ms.txn_date >= :dfrom';    $params['dfro
 if ($filterTo !== '')     { $where[] = 'ms.txn_date <= :dto';      $params['dto']   = $filterTo; }
 
 $stmt = db()->prepare(
-    'SELECT ms.id, ms.material_id, ms.txn_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
+    'SELECT ms.id, ms.material_id, ms.txn_date, ms.nepali_date, m.name, m.unit, m.category, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
             u.username AS recorded_by_username
      FROM materials_stock ms
      JOIN materials m ON m.id = ms.material_id
@@ -66,6 +66,16 @@ $stmt->execute($params);
 $history = $stmt->fetchAll();
 $hasFilters = $filterMaterial > 0 || $filterType !== '' || $filterFrom !== '' || $filterTo !== '';
 $totals = computeStockTotals($history);
+
+// Renders formatStockTotals() lines as "Category: qty unit" rows for the Total In/Out cards
+function renderTotalLines(array $lines): string {
+    if (empty($lines)) return '<div class="total-line"><span class="total-line-cat">—</span> 0</div>';
+    $html = '';
+    foreach ($lines as $l) {
+        $html .= '<div class="total-line"><span class="total-line-cat">' . htmlspecialchars($l['category']) . ':</span> ' . htmlspecialchars($l['text']) . '</div>';
+    }
+    return $html;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -167,6 +177,8 @@ $totals = computeStockTotals($history);
           <input type="date" id="stock-date" class="date-native-hidden" required value="<?= date('Y-m-d') ?>">
           <i class="fa-solid fa-calendar-days date-input-icon"></i>
         </div>
+        <span class="bs-date-label">Nepali date (B.S.)</span>
+        <div id="stock-date-bs" class="bs-datepicker-wrap"></div>
       </div>
       <div class="form-group">
         <label>Notes</label>
@@ -228,11 +240,11 @@ $totals = computeStockTotals($history);
     <div class="stock-totals-grid" id="stock-totals-grid">
       <div class="stock-total-box total-in">
         <div class="total-label"><i class="fa-solid fa-arrow-down"></i> Total In</div>
-        <div class="total-value" id="total-in-value"><?= htmlspecialchars(formatStockTotals($totals['in'], $totals['bundles_in'])) ?></div>
+        <div class="total-value" id="total-in-value"><?= renderTotalLines(formatStockTotals($totals['in'])) ?></div>
       </div>
       <div class="stock-total-box total-out">
         <div class="total-label"><i class="fa-solid fa-arrow-up"></i> Total Out</div>
-        <div class="total-value" id="total-out-value"><?= htmlspecialchars(formatStockTotals($totals['out'], $totals['bundles_out'])) ?></div>
+        <div class="total-value" id="total-out-value"><?= renderTotalLines(formatStockTotals($totals['out'])) ?></div>
       </div>
     </div>
 
@@ -241,11 +253,12 @@ $totals = computeStockTotals($history);
     </div>
     <div class="site-table-wrap" id="history-table-wrap" style="<?= empty($history) ? 'display:none' : '' ?>">
       <table class="site-table">
-        <thead><tr><th>Date</th><th>Category</th><th>Material</th><th>Type</th><th>Qty</th><th>User</th><th>Notes</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Nepali Date</th><th>Category</th><th>Material</th><th>Type</th><th>Qty</th><th>User</th><th>Notes</th><th></th></tr></thead>
         <tbody id="history-tbody">
         <?php foreach ($history as $h): ?>
           <tr>
             <td><?= htmlspecialchars($h['txn_date']) ?></td>
+            <td><?= htmlspecialchars($h['nepali_date'] ?? '—') ?></td>
             <td><?= htmlspecialchars($h['category'] ?? '—') ?></td>
             <td><?= htmlspecialchars($h['name']) ?></td>
             <td><span class="status-badge <?= htmlspecialchars($h['txn_type']) ?>"><?= strtoupper(htmlspecialchars($h['txn_type'])) ?></span></td>
@@ -301,6 +314,8 @@ $totals = computeStockTotals($history);
         <input type="date" id="edit-date" class="date-native-hidden">
         <i class="fa-solid fa-calendar-days date-input-icon"></i>
       </div>
+      <span class="bs-date-label">Nepali date (B.S.)</span>
+      <div id="edit-date-bs" class="bs-datepicker-wrap"></div>
     </div>
     <div class="form-group">
       <label>Notes</label>
@@ -313,13 +328,15 @@ $totals = computeStockTotals($history);
   </div>
 </div>
 
+<script src="nepali-date.js"></script>
 <script src="site.js"></script>
 <script>
 const CSRF    = <?= json_encode($csrf) ?>;
 const PROJECT = <?= json_encode($projectId) ?>;
 let HISTORY = <?= json_encode(array_map(fn($h) => [
   'id' => (int)$h['id'], 'material_id' => (int)$h['material_id'], 'txn_type' => $h['txn_type'],
-  'quantity' => $h['quantity'], 'bundle_qty' => $h['bundle_qty'], 'txn_date' => $h['txn_date'], 'notes' => $h['notes'],
+  'quantity' => $h['quantity'], 'bundle_qty' => $h['bundle_qty'], 'txn_date' => $h['txn_date'],
+  'nepali_date' => $h['nepali_date'], 'notes' => $h['notes'],
 ], $history)) ?>;
 let _editId = null;
 
@@ -343,6 +360,7 @@ function openEditStock(id) {
   document.getElementById('edit-bundle-qty').value = row.bundle_qty || '';
   document.getElementById('edit-date').value = row.txn_date;
   document.getElementById('edit-date-display').value = row.txn_date;
+  editNepaliPicker.setFromAdValue(row.txn_date);
   document.getElementById('edit-notes').value = row.notes || '';
   onEditMaterialChange();
   document.getElementById('edit-mask').style.display = 'flex';
@@ -395,6 +413,18 @@ setupDateField('edit-date-display', 'edit-date');
 setupDateField('filter-from-display', 'filter-from');
 setupDateField('filter-to-display', 'filter-to');
 
+attachNepaliDatePicker({
+  adNative:  document.getElementById('stock-date'),
+  adDisplay: document.getElementById('stock-date-display'),
+  wrapper:   document.getElementById('stock-date-bs'),
+});
+
+const editNepaliPicker = attachNepaliDatePicker({
+  adNative:  document.getElementById('edit-date'),
+  adDisplay: document.getElementById('edit-date-display'),
+  wrapper:   document.getElementById('edit-date-bs'),
+});
+
 function formatQty(q) {
   return parseFloat(q).toFixed(2).replace(/\.?0+$/, '');
 }
@@ -410,6 +440,7 @@ function renderHistoryRow(h) {
     : '';
   return `<tr>
     <td>${escapeHtml(h.txn_date)}</td>
+    <td>${escapeHtml(h.nepali_date || '—')}</td>
     <td>${escapeHtml(h.category || '—')}</td>
     <td>${escapeHtml(h.name)}</td>
     <td><span class="status-badge ${h.txn_type}">${h.txn_type.toUpperCase()}</span></td>
@@ -421,17 +452,23 @@ function renderHistoryRow(h) {
 }
 
 function renderTotals(totals) {
-  document.getElementById('total-in-value').textContent = formatTotalsBucket(totals.in, totals.bundles_in);
-  document.getElementById('total-out-value').textContent = formatTotalsBucket(totals.out, totals.bundles_out);
+  document.getElementById('total-in-value').innerHTML = formatTotalsBucket(totals.in);
+  document.getElementById('total-out-value').innerHTML = formatTotalsBucket(totals.out);
 }
 
-function formatTotalsBucket(byUnit, bundleCount) {
-  const keys = Object.keys(byUnit || {});
-  let text = keys.length ? keys.map(unit => `${formatQty(byUnit[unit])} ${unit}`).join(', ') : '0';
-  if (bundleCount > 0) {
-    text += ` (${formatQty(bundleCount)} bundle${parseFloat(bundleCount) === 1 ? '' : 's'})`;
-  }
-  return text;
+// totals.in / totals.out: { [category]: { units: { [unit]: qty }, bundles: N } }
+function formatTotalsBucket(byCategory) {
+  const cats = Object.keys(byCategory || {});
+  if (!cats.length) return '<div class="total-line"><span class="total-line-cat">—</span> 0</div>';
+  return cats.map(cat => {
+    const data  = byCategory[cat];
+    const units = Object.keys(data.units || {});
+    let text = units.length ? units.map(unit => `${formatQty(data.units[unit])} ${unit}`).join(', ') : '0';
+    if (data.bundles > 0) {
+      text += ` (${formatQty(data.bundles)} bundle${parseFloat(data.bundles) === 1 ? '' : 's'})`;
+    }
+    return `<div class="total-line"><span class="total-line-cat">${escapeHtml(cat)}:</span> ${text}</div>`;
+  }).join('');
 }
 
 async function fetchAndRenderHistory() {
@@ -446,7 +483,8 @@ async function fetchAndRenderHistory() {
 
   HISTORY = r.rows.map(h => ({
     id: parseInt(h.id, 10), material_id: parseInt(h.material_id, 10), txn_type: h.txn_type,
-    quantity: h.quantity, bundle_qty: h.bundle_qty, txn_date: h.txn_date, notes: h.notes,
+    quantity: h.quantity, bundle_qty: h.bundle_qty, txn_date: h.txn_date,
+    nepali_date: h.nepali_date, notes: h.notes,
   }));
 
   document.getElementById('history-tbody').innerHTML = r.rows.map(renderHistoryRow).join('');

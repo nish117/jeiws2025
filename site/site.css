@@ -25,6 +25,25 @@
 .date-input-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:14px}
 .date-native-hidden{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%;height:100%}
 
+/* ── Nepali (Bikram Sambat) popup calendar — kept in sync with the AD
+   date field above via attachNepaliDatePicker() in nepali-date.js ── */
+.bs-date-label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;margin-top:10px}
+.bs-datepicker-wrap{position:relative;max-width:220px}
+.bs-display-input{padding-right:40px!important;cursor:pointer;background:var(--surface)}
+
+.bs-calendar-popup{display:none;position:absolute;z-index:60;top:calc(100% + 6px);left:0;width:264px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 12px 32px rgba(12,30,45,0.16);padding:12px}
+.bs-calendar-popup.is-open{display:block}
+.bs-cal-header{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.bs-cal-nav{flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer;font-size:11px}
+.bs-cal-nav:hover{background:var(--blue-pale);color:var(--blue);border-color:var(--blue)}
+.bs-cal-header select{flex:1;min-width:0;padding:6px 6px;font-size:12px}
+.bs-cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.bs-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.bs-cal-empty{height:32px}
+.bs-cal-day{height:32px;border:none;border-radius:8px;background:transparent;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:background var(--t),color var(--t)}
+.bs-cal-day:hover{background:var(--blue-pale);color:var(--blue)}
+.bs-cal-day.is-selected{background:var(--blue);color:#fff}
+
 /* ── Worker attendance list ──────────────────────────── */
 .worker-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-2)}
 .worker-row:last-child{border-bottom:none}
@@ -73,7 +92,9 @@
 .stock-total-box .total-label{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px}
 .stock-total-box.total-in .total-label{color:#1A9966}
 .stock-total-box.total-out .total-label{color:#C0392B}
-.stock-total-box .total-value{font-family:'Sora',sans-serif;font-size:1.3rem;font-weight:800;color:var(--navy);word-break:break-word}
+.stock-total-box .total-value{display:flex;flex-direction:column;gap:4px}
+.total-line{font-family:'Sora',sans-serif;font-size:1.05rem;font-weight:800;color:var(--navy);word-break:break-word;line-height:1.3}
+.total-line-cat{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-right:4px}
 
 .txn-type-toggle{display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;width:fit-content}
 .txn-type-toggle label{display:flex;align-items:center;gap:6px;padding:9px 18px;cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);transition:background var(--t),color var(--t)}

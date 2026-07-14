@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS labour_attendance (
     project_id       VARCHAR(64) NOT NULL,
     worker_id        INT         NOT NULL,
     attendance_date  DATE        NOT NULL,
+    nepali_date      VARCHAR(10),              -- attendance_date in Bikram Sambat, e.g. "2083-03-30"
     status           VARCHAR(10) NOT NULL CHECK (status IN ('present','absent','half_day')),
     notes            TEXT,
     recorded_by      INT,
@@ -94,6 +95,7 @@ CREATE TABLE IF NOT EXISTS materials_stock (
     bundle_qty  DECIMAL(12,2) NULL,       -- optional secondary count, e.g. reinforcement
                                             -- bundles alongside the primary kg quantity
     txn_date    DATE          NOT NULL,
+    nepali_date VARCHAR(10),               -- txn_date in Bikram Sambat, e.g. "2083-03-30"
     notes       TEXT,
     recorded_by INT,
     created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,

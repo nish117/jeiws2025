@@ -46,42 +46,45 @@ function getProjectTitle(string $projectId): ?string {
 }
 
 // Sums IN vs OUT quantities from a set of stock_transaction rows, grouped
-// by unit — materials can be tracked in different units (bags, kg, cft),
-// so a single combined number would be misleading whenever more than one
-// unit is present in the result set. Also tallies the optional bundle_qty
-// (e.g. reinforcement bundles logged alongside the primary kg quantity) —
-// a plain sum is meaningful there since "bundle" is one consistent unit
-// regardless of which diameter it belongs to.
-// Expects rows with 'txn_type', 'quantity', 'unit', and 'bundle_qty' keys.
+// by category then unit — materials can be tracked in different units
+// (bags, kg, cft), so a single combined number would be misleading
+// whenever more than one is present; grouping by category first also
+// makes each line meaningful on its own (e.g. "Reinforcement: 100 kg"
+// instead of an unlabeled "100 kg" that could be any material).
+// Expects rows with 'txn_type', 'category', 'quantity', 'unit', 'bundle_qty' keys.
 function computeStockTotals(array $rows): array {
-    $totals = ['in' => [], 'out' => [], 'bundles_in' => 0, 'bundles_out' => 0];
+    $totals = ['in' => [], 'out' => []];
     foreach ($rows as $r) {
         $key  = $r['txn_type'] === 'out' ? 'out' : 'in';
+        $cat  = ($r['category'] ?? '') !== '' ? $r['category'] : 'Other';
         $unit = $r['unit'];
-        $totals[$key][$unit] = ($totals[$key][$unit] ?? 0) + (float)$r['quantity'];
+        if (!isset($totals[$key][$cat])) {
+            $totals[$key][$cat] = ['units' => [], 'bundles' => 0];
+        }
+        $totals[$key][$cat]['units'][$unit] = ($totals[$key][$cat]['units'][$unit] ?? 0) + (float)$r['quantity'];
         if (!empty($r['bundle_qty'])) {
-            $bundleKey = $r['txn_type'] === 'out' ? 'bundles_out' : 'bundles_in';
-            $totals[$bundleKey] += (float)$r['bundle_qty'];
+            $totals[$key][$cat]['bundles'] += (float)$r['bundle_qty'];
         }
     }
     return $totals;
 }
 
-// Renders a computeStockTotals() bucket (e.g. $totals['in']) as "50 bags, 12 cft",
-// optionally appending a bundle count, e.g. "270 kg (5 bundles)"
-function formatStockTotals(array $byUnit, float $bundleCount = 0): string {
-    $text = '0';
-    if (!empty($byUnit)) {
+// Renders a computeStockTotals() bucket (e.g. $totals['in']) into one
+// display line per category, e.g. ['category' => 'Reinforcement', 'text' => '100 kg (10 bundles)']
+function formatStockTotals(array $byCategory): array {
+    $lines = [];
+    foreach ($byCategory as $cat => $data) {
         $parts = [];
-        foreach ($byUnit as $unit => $qty) {
+        foreach ($data['units'] as $unit => $qty) {
             $parts[] = rtrim(rtrim(number_format($qty, 2), '0'), '.') . ' ' . $unit;
         }
         $text = implode(', ', $parts);
+        if ($data['bundles'] > 0) {
+            $text .= ' (' . rtrim(rtrim(number_format($data['bundles'], 2), '0'), '.') . ' bundle' . ($data['bundles'] == 1 ? '' : 's') . ')';
+        }
+        $lines[] = ['category' => $cat, 'text' => $text];
     }
-    if ($bundleCount > 0) {
-        $text .= ' (' . rtrim(rtrim(number_format($bundleCount, 2), '0'), '.') . ' bundle' . ($bundleCount == 1 ? '' : 's') . ')';
-    }
-    return $text;
+    return $lines;
 }
 
 // ── CSRF (mirrors admin/functions.php) ──────────────────
