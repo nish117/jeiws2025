@@ -26,7 +26,7 @@ $existing = array_column($stmt->fetchAll(), 'status', 'worker_id');
 
 // Recent history for this project (last 20 days worth of entries)
 $stmt = db()->prepare(
-    'SELECT la.attendance_date, w.full_name, w.category, la.status
+    'SELECT la.attendance_date, la.nepali_date, w.full_name, w.category, la.status
      FROM labour_attendance la
      JOIN workers w ON w.id = la.worker_id
      WHERE la.project_id = :pid
@@ -164,11 +164,12 @@ $history = $stmt->fetchAll();
       <?php else: ?>
       <div class="site-table-wrap">
         <table class="site-table">
-          <thead><tr><th>Date</th><th>Worker</th><th>Category</th><th>Status</th></tr></thead>
+          <thead><tr><th>Date</th><th>Nepali Date</th><th>Worker</th><th>Category</th><th>Status</th></tr></thead>
           <tbody>
           <?php foreach ($history as $h): ?>
             <tr>
               <td><?= htmlspecialchars($h['attendance_date']) ?></td>
+              <td><?= htmlspecialchars($h['nepali_date'] ?? '—') ?></td>
               <td><?= htmlspecialchars($h['full_name']) ?></td>
               <td><?= htmlspecialchars($h['category'] ?? '—') ?></td>
               <td><span class="status-badge <?= htmlspecialchars($h['status']) ?>"><?= htmlspecialchars(str_replace('_', ' ', $h['status'])) ?></span></td>

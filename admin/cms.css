@@ -266,7 +266,7 @@ textarea{resize:vertical;min-height:110px}
 
 /* ── Confirm modal ───────────────────────────────── */
 .mask{position:fixed;inset:0;background:rgba(6,13,21,0.55);backdrop-filter:blur(2px);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
-.confirm-box{background:var(--surface);border-radius:var(--r-lg);padding:28px;max-width:380px;width:100%;box-shadow:var(--s3);animation:cmsFadeUp 0.22s ease both}
+.confirm-box{background:var(--surface);border-radius:var(--r-lg);padding:28px;max-width:380px;width:100%;max-height:calc(100vh - 40px);overflow-y:auto;box-shadow:var(--s3);animation:cmsFadeUp 0.22s ease both}
 .confirm-box h3{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;margin-bottom:10px;color:var(--navy)}
 .confirm-box p{font-size:14px;color:var(--muted);margin-bottom:22px;line-height:1.6}
 .confirm-actions{display:flex;gap:10px;justify-content:flex-end}

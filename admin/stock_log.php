@@ -14,6 +14,7 @@ $projects = [];
 $materials = [];
 $history  = [];
 $totals   = ['in' => [], 'out' => [], 'bundles_in' => 0, 'bundles_out' => 0];
+$balancesByProject = [];
 
 // Filters
 $filterProject  = trim($_GET['project_id']  ?? '');
@@ -57,6 +58,33 @@ try {
     $stmt->execute($params);
     $history = $stmt->fetchAll();
     $totals  = computeStockTotals($history);
+
+    // Current stock — the running balance per material, independent of the
+    // material/type/date filters above (those narrow the transaction log,
+    // but "what's currently in stock" is a present-state snapshot). Only
+    // the project filter applies, since balances are grouped per project
+    // to avoid silently merging separate job sites' physical stock.
+    $balWhere  = [];
+    $balParams = [];
+    if ($filterProject !== '') { $balWhere[] = 'ms.project_id = :pid'; $balParams['pid'] = $filterProject; }
+    $balWhereSql = $balWhere ? ('WHERE ' . implode(' AND ', $balWhere)) : '';
+
+    $stmt = db()->prepare(
+        "SELECT p.id AS project_id, p.title AS project_title,
+                m.id AS material_id, m.name, m.unit, m.category,
+                COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) AS balance
+         FROM materials_stock ms
+         JOIN materials m ON m.id = ms.material_id
+         JOIN projects p  ON p.id = ms.project_id
+         $balWhereSql
+         GROUP BY p.id, p.title, m.id, m.name, m.unit, m.category
+         HAVING COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) <> 0
+         ORDER BY p.title, (m.category IS NULL), m.category, m.name"
+    );
+    $stmt->execute($balParams);
+    foreach ($stmt->fetchAll() as $row) {
+        $balancesByProject[$row['project_title']][] = $row;
+    }
 } catch (Throwable $e) {
     $dbError = $e->getMessage();
 }
@@ -95,6 +123,17 @@ function renderStockLogTotalLines(array $lines): string {
 .date-input-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:14px}
 .date-native-hidden{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%;height:100%}
 .log-filter-form{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+
+/* ── Current stock cards (mirrors site/site.css's .stock-balance-*,
+   duplicated here since this page doesn't link the site stylesheet) ── */
+.stock-balance-project + .stock-balance-project{margin-top:20px}
+.stock-balance-project-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.stock-balance-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.stock-balance-card{background:var(--bg);border:1px solid var(--border-2);border-radius:var(--r);padding:16px}
+.stock-balance-card .mat-category{font-size:10px;font-weight:700;color:var(--gold-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.stock-balance-card .mat-name{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:6px}
+.stock-balance-card .mat-qty{font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:var(--blue)}
+.stock-balance-card .mat-unit{font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
 .log-filter-form .form-group{margin-bottom:0}
 
 /* ── Log table (cms.css doesn't define these — they normally
@@ -147,6 +186,31 @@ function renderStockLogTotalLines(array $lines): string {
     </div>
   </div>
   <?php else: ?>
+
+  <div class="card">
+    <div class="card-title">Current Stock</div>
+    <?php if (empty($balancesByProject)): ?>
+    <div class="empty"><p>No stock currently recorded<?= $filterProject !== '' ? ' for this project' : '' ?>.</p></div>
+    <?php else: ?>
+    <?php foreach ($balancesByProject as $projectTitle => $rows): ?>
+    <div class="stock-balance-project">
+      <?php if (count($balancesByProject) > 1): ?>
+      <div class="stock-balance-project-title"><i class="fa-solid fa-diagram-project"></i> <?= htmlspecialchars($projectTitle) ?></div>
+      <?php endif ?>
+      <div class="stock-balance-grid">
+        <?php foreach ($rows as $b): ?>
+        <div class="stock-balance-card">
+          <?php if ($b['category']): ?><div class="mat-category"><?= htmlspecialchars($b['category']) ?></div><?php endif ?>
+          <div class="mat-name"><?= htmlspecialchars($b['name']) ?></div>
+          <span class="mat-qty"><?= rtrim(rtrim(number_format((float)$b['balance'], 2), '0'), '.') ?></span>
+          <span class="mat-unit"><?= htmlspecialchars($b['unit']) ?></span>
+        </div>
+        <?php endforeach ?>
+      </div>
+    </div>
+    <?php endforeach ?>
+    <?php endif ?>
+  </div>
 
   <div class="card">
     <div class="card-title">
