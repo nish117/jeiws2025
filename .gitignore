@@ -5,3 +5,6 @@ data/log/
 
 .claude/
 .mcp.json
+
+config/db.php
+config/db.live.php

@@ -35,6 +35,37 @@ $stmt = db()->prepare(
 );
 $stmt->execute(['pid' => $projectId]);
 $history = $stmt->fetchAll();
+
+// Present/absent/man-day totals — computed from ALL records for this
+// project (not just the 100 shown above), so "Total" is accurate even
+// once history grows past the display limit.
+$stmt = db()->prepare('SELECT status, COUNT(*) AS cnt FROM labour_attendance WHERE project_id = :pid GROUP BY status');
+$stmt->execute(['pid' => $projectId]);
+$statusCounts = array_column($stmt->fetchAll(), 'cnt', 'status');
+$presentDays  = (int)($statusCounts['present']  ?? 0);
+$absentDays   = (int)($statusCounts['absent']   ?? 0);
+$halfDays     = (int)($statusCounts['half_day'] ?? 0);
+$manDays      = $presentDays + ($halfDays * 0.5);
+
+// Per-worker present/absent breakdown for this project (all records, not
+// capped to the 100 shown in the history table below).
+$stmt = db()->prepare(
+    'SELECT w.id AS worker_id, w.full_name, w.category, la.status, COUNT(*) AS cnt
+     FROM labour_attendance la
+     JOIN workers w ON w.id = la.worker_id
+     WHERE la.project_id = :pid
+     GROUP BY w.id, w.full_name, w.category, la.status'
+);
+$stmt->execute(['pid' => $projectId]);
+$byWorker = [];
+foreach ($stmt->fetchAll() as $row) {
+    $wid = $row['worker_id'];
+    if (!isset($byWorker[$wid])) {
+        $byWorker[$wid] = ['full_name' => $row['full_name'], 'category' => $row['category'], 'present' => 0, 'absent' => 0, 'half_day' => 0];
+    }
+    $byWorker[$wid][$row['status']] = (int)$row['cnt'];
+}
+usort($byWorker, fn($a, $b) => strcasecmp($a['full_name'], $b['full_name']));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -53,6 +84,8 @@ $history = $stmt->fetchAll();
     <img src="../assets/logo.png" alt="">
     JEIWS <span>SITE</span>
   </a>
+  <input type="checkbox" id="navToggle" class="nav-toggle">
+  <label for="navToggle" class="nav-toggle-btn"><i class="fa-solid fa-bars"></i></label>
   <div class="cms-nav-right">
     <span class="site-welcome">Hi, <?= htmlspecialchars($_SESSION['site_user_name']) ?></span>
     <a href="change_password.php"><i class="fa-solid fa-key"></i> Password</a>
@@ -162,6 +195,35 @@ $history = $stmt->fetchAll();
       <?php if (empty($history)): ?>
       <div class="empty"><p>No attendance recorded yet for this project.</p></div>
       <?php else: ?>
+      <div class="attendance-summary-grid">
+        <div class="attendance-summary-box present">
+          <div class="as-label"><i class="fa-solid fa-user-check"></i> Total Present Days</div>
+          <span class="as-value"><?= $presentDays ?></span>
+        </div>
+        <div class="attendance-summary-box absent">
+          <div class="as-label"><i class="fa-solid fa-user-xmark"></i> Total Absent Days</div>
+          <span class="as-value"><?= $absentDays ?></span>
+        </div>
+        <div class="attendance-summary-box mandays">
+          <div class="as-label"><i class="fa-solid fa-people-group"></i> Total Man-Days</div>
+          <span class="as-value"><?= rtrim(rtrim(number_format($manDays, 1), '0'), '.') ?></span>
+        </div>
+      </div>
+      <?php if (!empty($byWorker)): ?>
+      <h3 class="section-subhdr">By Worker</h3>
+      <div class="labour-summary-grid">
+        <?php foreach ($byWorker as $w): ?>
+        <div class="labour-summary-card">
+          <?php if ($w['category']): ?><div class="ls-category"><?= htmlspecialchars($w['category']) ?></div><?php endif ?>
+          <div class="ls-name"><?= htmlspecialchars($w['full_name']) ?></div>
+          <div class="labour-stat-row">
+            <div class="labour-stat present"><span class="val"><?= $w['present'] ?></span><span class="lbl">Present</span></div>
+            <div class="labour-stat absent"><span class="val"><?= $w['absent'] ?></span><span class="lbl">Absent</span></div>
+          </div>
+        </div>
+        <?php endforeach ?>
+      </div>
+      <?php endif ?>
       <div class="site-table-wrap">
         <table class="site-table">
           <thead><tr><th>Date</th><th>Nepali Date</th><th>Worker</th><th>Category</th><th>Status</th></tr></thead>

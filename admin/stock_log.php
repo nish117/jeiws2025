@@ -33,57 +33,57 @@ try {
     $projects  = db()->query('SELECT id, title FROM projects ORDER BY title')->fetchAll();
     $materials = db()->query('SELECT id, name, unit, category FROM materials ORDER BY (category IS NULL), category, name')->fetchAll();
 
-    $where  = [];
-    $params = [];
-    if ($filterProject !== '')  { $where[] = 'ms.project_id = :pid';   $params['pid']  = $filterProject; }
-    if ($filterMaterial > 0)    { $where[] = 'ms.material_id = :mid';  $params['mid']  = $filterMaterial; }
-    if ($filterType !== '')     { $where[] = 'ms.txn_type = :type';    $params['type'] = $filterType; }
-    if ($filterFrom !== '')     { $where[] = 'ms.txn_date >= :dfrom';  $params['dfrom'] = $filterFrom; }
-    if ($filterTo !== '')       { $where[] = 'ms.txn_date <= :dto';    $params['dto']   = $filterTo; }
-    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+    // A project must be selected before any log data is queried/shown —
+    // this is a cross-project admin view, and defaulting to "all projects"
+    // both encourages accidentally merging separate job sites' figures and
+    // is expensive to compute for no clear reason. See the prompt state
+    // rendered below when $filterProject === ''.
+    if ($filterProject !== '') {
+        $where  = ['ms.project_id = :pid'];
+        $params = ['pid' => $filterProject];
+        if ($filterMaterial > 0)    { $where[] = 'ms.material_id = :mid';  $params['mid']  = $filterMaterial; }
+        if ($filterType !== '')     { $where[] = 'ms.txn_type = :type';    $params['type'] = $filterType; }
+        if ($filterFrom !== '')     { $where[] = 'ms.txn_date >= :dfrom';  $params['dfrom'] = $filterFrom; }
+        if ($filterTo !== '')       { $where[] = 'ms.txn_date <= :dto';    $params['dto']   = $filterTo; }
+        $whereSql = 'WHERE ' . implode(' AND ', $where);
 
-    $stmt = db()->prepare(
-        "SELECT ms.id, ms.txn_date, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
-                m.name AS material_name, m.unit, m.category,
-                p.id AS project_id, p.title AS project_title,
-                u.username AS recorded_by_username
-         FROM materials_stock ms
-         JOIN materials m ON m.id = ms.material_id
-         JOIN projects p  ON p.id = ms.project_id
-         LEFT JOIN site_users u ON u.id = ms.recorded_by
-         $whereSql
-         ORDER BY ms.txn_date DESC, ms.id DESC
-         LIMIT 500"
-    );
-    $stmt->execute($params);
-    $history = $stmt->fetchAll();
-    $totals  = computeStockTotals($history);
+        $stmt = db()->prepare(
+            "SELECT ms.id, ms.txn_date, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
+                    m.name AS material_name, m.unit, m.category,
+                    p.id AS project_id, p.title AS project_title,
+                    u.username AS recorded_by_username
+             FROM materials_stock ms
+             JOIN materials m ON m.id = ms.material_id
+             JOIN projects p  ON p.id = ms.project_id
+             LEFT JOIN site_users u ON u.id = ms.recorded_by
+             $whereSql
+             ORDER BY ms.txn_date DESC, ms.id DESC
+             LIMIT 500"
+        );
+        $stmt->execute($params);
+        $history = $stmt->fetchAll();
+        $totals  = computeStockTotals($history);
 
-    // Current stock — the running balance per material, independent of the
-    // material/type/date filters above (those narrow the transaction log,
-    // but "what's currently in stock" is a present-state snapshot). Only
-    // the project filter applies, since balances are grouped per project
-    // to avoid silently merging separate job sites' physical stock.
-    $balWhere  = [];
-    $balParams = [];
-    if ($filterProject !== '') { $balWhere[] = 'ms.project_id = :pid'; $balParams['pid'] = $filterProject; }
-    $balWhereSql = $balWhere ? ('WHERE ' . implode(' AND ', $balWhere)) : '';
-
-    $stmt = db()->prepare(
-        "SELECT p.id AS project_id, p.title AS project_title,
-                m.id AS material_id, m.name, m.unit, m.category,
-                COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) AS balance
-         FROM materials_stock ms
-         JOIN materials m ON m.id = ms.material_id
-         JOIN projects p  ON p.id = ms.project_id
-         $balWhereSql
-         GROUP BY p.id, p.title, m.id, m.name, m.unit, m.category
-         HAVING COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) <> 0
-         ORDER BY p.title, (m.category IS NULL), m.category, m.name"
-    );
-    $stmt->execute($balParams);
-    foreach ($stmt->fetchAll() as $row) {
-        $balancesByProject[$row['project_title']][] = $row;
+        // Current stock — the running balance per material, independent of
+        // the material/type/date filters above (those narrow the
+        // transaction log, but "what's currently in stock" is a
+        // present-state snapshot for the selected project).
+        $stmt = db()->prepare(
+            "SELECT p.id AS project_id, p.title AS project_title,
+                    m.id AS material_id, m.name, m.unit, m.category,
+                    COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) AS balance
+             FROM materials_stock ms
+             JOIN materials m ON m.id = ms.material_id
+             JOIN projects p  ON p.id = ms.project_id
+             WHERE ms.project_id = :pid
+             GROUP BY p.id, p.title, m.id, m.name, m.unit, m.category
+             HAVING COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) <> 0
+             ORDER BY (m.category IS NULL), m.category, m.name"
+        );
+        $stmt->execute(['pid' => $filterProject]);
+        foreach ($stmt->fetchAll() as $row) {
+            $balancesByProject[$row['project_title']][] = $row;
+        }
     }
 } catch (Throwable $e) {
     $dbError = $e->getMessage();
@@ -157,6 +157,8 @@ function renderStockLogTotalLines(array $lines): string {
     <img src="../assets/logo.png" alt="">
     JEIWS <span>CMS</span>
   </a>
+  <input type="checkbox" id="navToggle" class="nav-toggle">
+  <label for="navToggle" class="nav-toggle-btn"><i class="fa-solid fa-bars"></i></label>
   <div class="cms-nav-right">
     <a href="index.php">Projects</a>
     <a href="analytics.php">Analytics</a>
@@ -188,39 +190,14 @@ function renderStockLogTotalLines(array $lines): string {
   <?php else: ?>
 
   <div class="card">
-    <div class="card-title">Current Stock</div>
-    <?php if (empty($balancesByProject)): ?>
-    <div class="empty"><p>No stock currently recorded<?= $filterProject !== '' ? ' for this project' : '' ?>.</p></div>
-    <?php else: ?>
-    <?php foreach ($balancesByProject as $projectTitle => $rows): ?>
-    <div class="stock-balance-project">
-      <?php if (count($balancesByProject) > 1): ?>
-      <div class="stock-balance-project-title"><i class="fa-solid fa-diagram-project"></i> <?= htmlspecialchars($projectTitle) ?></div>
-      <?php endif ?>
-      <div class="stock-balance-grid">
-        <?php foreach ($rows as $b): ?>
-        <div class="stock-balance-card">
-          <?php if ($b['category']): ?><div class="mat-category"><?= htmlspecialchars($b['category']) ?></div><?php endif ?>
-          <div class="mat-name"><?= htmlspecialchars($b['name']) ?></div>
-          <span class="mat-qty"><?= rtrim(rtrim(number_format((float)$b['balance'], 2), '0'), '.') ?></span>
-          <span class="mat-unit"><?= htmlspecialchars($b['unit']) ?></span>
-        </div>
-        <?php endforeach ?>
-      </div>
-    </div>
-    <?php endforeach ?>
-    <?php endif ?>
-  </div>
-
-  <div class="card">
     <div class="card-title">
       Filters
     </div>
     <form class="log-filter-form" method="GET">
       <div class="form-group">
-        <label>Project</label>
-        <select name="project_id">
-          <option value="">All projects</option>
+        <label>Project <span style="color:var(--danger)">*</span></label>
+        <select name="project_id" required>
+          <option value="">— Select a project —</option>
           <?php foreach ($projects as $p): ?>
           <option value="<?= htmlspecialchars($p['id']) ?>" <?= $filterProject === $p['id'] ? 'selected' : '' ?>><?= htmlspecialchars($p['title']) ?></option>
           <?php endforeach ?>
@@ -266,7 +243,40 @@ function renderStockLogTotalLines(array $lines): string {
       <a href="stock_log.php" class="btn btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i> Clear</a>
       <?php endif ?>
     </form>
+  </div>
 
+  <?php if ($filterProject === ''): ?>
+  <div class="card">
+    <div class="empty">
+      <div class="empty-icon"><i class="fa-solid fa-diagram-project"></i></div>
+      <h3>Select a project to view its log</h3>
+      <p>Choose a project above to see its current stock and materials transactions.</p>
+    </div>
+  </div>
+  <?php else: ?>
+
+  <div class="card">
+    <div class="card-title">Current Stock</div>
+    <?php if (empty($balancesByProject)): ?>
+    <div class="empty"><p>No stock currently recorded for this project.</p></div>
+    <?php else: ?>
+    <?php foreach ($balancesByProject as $rows): ?>
+      <div class="stock-balance-grid">
+        <?php foreach ($rows as $b): ?>
+        <div class="stock-balance-card">
+          <?php if ($b['category']): ?><div class="mat-category"><?= htmlspecialchars($b['category']) ?></div><?php endif ?>
+          <div class="mat-name"><?= htmlspecialchars($b['name']) ?></div>
+          <span class="mat-qty"><?= rtrim(rtrim(number_format((float)$b['balance'], 2), '0'), '.') ?></span>
+          <span class="mat-unit"><?= htmlspecialchars($b['unit']) ?></span>
+        </div>
+        <?php endforeach ?>
+      </div>
+    <?php endforeach ?>
+    <?php endif ?>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Totals</div>
     <div class="stock-log-totals">
       <div class="stock-log-total-box in">
         <div class="lbl"><i class="fa-solid fa-arrow-down"></i> Total In</div>
@@ -292,13 +302,12 @@ function renderStockLogTotalLines(array $lines): string {
     <div class="site-table-wrap">
       <table class="site-table">
         <thead>
-          <tr><th>Date</th><th>Project</th><th>Category</th><th>Material</th><th>Type</th><th>Qty</th><th>User</th><th>Notes</th></tr>
+          <tr><th>Date</th><th>Category</th><th>Material</th><th>Type</th><th>Qty</th><th>User</th><th>Notes</th></tr>
         </thead>
         <tbody>
         <?php foreach ($history as $h): ?>
           <tr>
             <td><?= htmlspecialchars($h['txn_date']) ?></td>
-            <td><?= htmlspecialchars($h['project_title']) ?></td>
             <td><?= htmlspecialchars($h['category'] ?? '—') ?></td>
             <td><?= htmlspecialchars($h['material_name']) ?></td>
             <td><span class="status-badge <?= htmlspecialchars($h['txn_type']) ?>"><?= strtoupper(htmlspecialchars($h['txn_type'])) ?></span></td>
@@ -312,6 +321,7 @@ function renderStockLogTotalLines(array $lines): string {
     </div>
     <?php endif ?>
   </div>
+  <?php endif ?>
   <?php endif ?>
 </main>
 

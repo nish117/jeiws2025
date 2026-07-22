@@ -23,6 +23,8 @@ $projects = getAssignedProjects(currentSiteUserId());
     <img src="../assets/logo.png" alt="">
     JEIWS <span>SITE</span>
   </a>
+  <input type="checkbox" id="navToggle" class="nav-toggle">
+  <label for="navToggle" class="nav-toggle-btn"><i class="fa-solid fa-bars"></i></label>
   <div class="cms-nav-right">
     <span class="site-welcome">Hi, <?= htmlspecialchars($_SESSION['site_user_name']) ?></span>
     <a href="change_password.php"><i class="fa-solid fa-key"></i> Password</a>

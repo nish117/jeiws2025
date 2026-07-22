@@ -46,6 +46,8 @@ $allProjects = array_filter(loadProjects(), fn($p) => !empty($p['id']));
     <img src="../assets/logo.png" alt="">
     JEIWS <span>CMS</span>
   </a>
+  <input type="checkbox" id="navToggle" class="nav-toggle">
+  <label for="navToggle" class="nav-toggle-btn"><i class="fa-solid fa-bars"></i></label>
   <div class="cms-nav-right">
     <a href="index.php">Projects</a>
     <a href="analytics.php">Analytics</a>
