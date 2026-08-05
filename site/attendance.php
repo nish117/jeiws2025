@@ -16,8 +16,19 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) $date = date('Y-m-d');
 
 $csrf = siteCsrfToken();
 
-// Active worker roster
+// Active worker roster (for marking today's attendance)
 $workers = db()->query('SELECT id, full_name, category FROM workers WHERE is_active = TRUE ORDER BY full_name')->fetchAll();
+
+// Full roster incl. hidden workers, with a global attendance count (across
+// all projects, not just this one) so deletion can be blocked if a worker
+// has any history — mirrors admin/materials.php's hide-vs-delete pattern.
+$allWorkers = db()->query(
+    'SELECT w.id, w.full_name, w.category, w.is_active, COUNT(la.id) AS attendance_count
+     FROM workers w
+     LEFT JOIN labour_attendance la ON la.worker_id = w.id
+     GROUP BY w.id, w.full_name, w.category, w.is_active
+     ORDER BY w.full_name'
+)->fetchAll();
 
 // Existing statuses for this project + date
 $stmt = db()->prepare('SELECT worker_id, status FROM labour_attendance WHERE project_id = :pid AND attendance_date = :date');
@@ -164,7 +175,7 @@ usort($byWorker, fn($a, $b) => strcasecmp($a['full_name'], $b['full_name']));
 
   <div class="card collapsible">
     <button type="button" class="card-title collapsible-toggle" onclick="toggleCollapse(this)">
-      Add Worker to Roster
+      Manage Worker Roster
       <i class="fa-solid fa-chevron-down collapse-icon"></i>
     </button>
     <div class="collapsible-body">
@@ -183,6 +194,36 @@ usort($byWorker, fn($a, $b) => strcasecmp($a['full_name'], $b['full_name']));
         </div>
         <button type="submit" class="btn btn-ghost"><i class="fa-solid fa-plus"></i> Add</button>
       </form>
+
+      <?php if (!empty($allWorkers)): ?>
+      <div id="roster-list" class="roster-list">
+        <?php foreach ($allWorkers as $w): ?>
+        <div class="worker-row<?= $w['is_active'] ? '' : ' is-hidden' ?>" id="roster-worker-<?= $w['id'] ?>">
+          <div class="worker-row-info">
+            <div class="worker-row-name">
+              <?= htmlspecialchars($w['full_name']) ?>
+              <span class="roster-hidden-tag" id="roster-tag-<?= $w['id'] ?>" style="<?= $w['is_active'] ? 'display:none' : '' ?>">Hidden</span>
+            </div>
+            <?php if ($w['category']): ?><div class="worker-row-meta"><?= htmlspecialchars($w['category']) ?></div><?php endif ?>
+          </div>
+          <div class="roster-actions">
+            <button class="btn btn-ghost btn-sm" title="<?= $w['is_active'] ? 'Hide from attendance list' : 'Unhide' ?>" onclick="toggleWorkerActive(<?= $w['id'] ?>, this)">
+              <i class="fa-solid fa-eye<?= $w['is_active'] ? '-slash' : '' ?>"></i>
+            </button>
+            <?php if ($w['attendance_count'] > 0): ?>
+            <button class="btn btn-ghost btn-sm" disabled title="<?= $w['attendance_count'] ?> attendance record<?= $w['attendance_count'] == 1 ? '' : 's' ?> logged — hide instead of deleting">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+            <?php else: ?>
+            <button class="btn btn-ghost btn-sm" title="Delete" onclick="confirmDeleteWorker(<?= $w['id'] ?>, <?= json_encode($w['full_name']) ?>)">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+            <?php endif ?>
+          </div>
+        </div>
+        <?php endforeach ?>
+      </div>
+      <?php endif ?>
     </div>
   </div>
 
@@ -255,6 +296,17 @@ usort($byWorker, fn($a, $b) => strcasecmp($a['full_name'], $b['full_name']));
 
 <div class="toasts" id="toasts"></div>
 
+<div class="mask" id="worker-delete-mask" style="display:none">
+  <div class="confirm-box">
+    <h3>Delete Worker</h3>
+    <p id="worker-delete-msg"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeWorkerDeleteMask()">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="worker-delete-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
 <script src="nepali-date.js"></script>
 <script src="site.js"></script>
 <script>
@@ -324,6 +376,43 @@ async function addWorker(e) {
     toast(r.error || 'Failed to add worker.', 'err');
   }
   return false;
+}
+
+async function toggleWorkerActive(id, btn) {
+  btn.disabled = true;
+  const r = await post({ action: 'toggle_worker_active', worker_id: id });
+  btn.disabled = false;
+  if (r.success) {
+    btn.innerHTML = `<i class="fa-solid fa-eye${r.is_active ? '-slash' : ''}"></i>`;
+    btn.title = r.is_active ? 'Hide from attendance list' : 'Unhide';
+    document.getElementById('roster-worker-' + id).classList.toggle('is-hidden', !r.is_active);
+    document.getElementById('roster-tag-' + id).style.display = r.is_active ? 'none' : '';
+    toast(r.is_active ? 'Worker unhidden — will appear in the attendance list again.' : 'Worker hidden from the attendance list.', 'ok');
+  } else {
+    toast(r.error || 'Failed to update worker.', 'err');
+  }
+}
+
+let _delWorkerCb = null;
+function confirmDeleteWorker(id, name) {
+  document.getElementById('worker-delete-msg').textContent = `Delete "${name}"? This cannot be undone.`;
+  document.getElementById('worker-delete-mask').style.display = 'flex';
+  _delWorkerCb = () => doDeleteWorker(id);
+}
+document.getElementById('worker-delete-confirm').onclick = () => { if (_delWorkerCb) _delWorkerCb(); };
+function closeWorkerDeleteMask() {
+  document.getElementById('worker-delete-mask').style.display = 'none';
+  _delWorkerCb = null;
+}
+async function doDeleteWorker(id) {
+  closeWorkerDeleteMask();
+  const r = await post({ action: 'delete_worker', worker_id: id });
+  if (r.success) {
+    toast('Worker deleted.', 'ok');
+    setTimeout(() => location.reload(), 500);
+  } else {
+    toast(r.error || 'Delete failed.', 'err');
+  }
 }
 
 function toast(msg, type = 'ok') {

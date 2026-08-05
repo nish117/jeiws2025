@@ -55,6 +55,12 @@
 .worker-row select.status-absent{border-color:var(--danger);color:var(--danger)}
 .worker-row select.status-half_day{border-color:var(--warn);color:var(--warn)}
 
+/* ── Worker roster management (hide/delete) ────────────── */
+.roster-list{margin-top:20px;padding-top:16px;border-top:1px solid var(--border-2)}
+.worker-row.is-hidden{opacity:0.55}
+.roster-hidden-tag{display:inline-flex;align-items:center;margin-left:8px;padding:2px 9px;border-radius:100px;background:var(--bg);color:var(--muted);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px}
+.roster-actions{display:flex;gap:6px;flex-shrink:0}
+
 /* ── Add-worker / add-material inline form ───────────── */
 .inline-add-form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end}
 @media(max-width:760px){.inline-add-form{grid-template-columns:1fr 1fr}}

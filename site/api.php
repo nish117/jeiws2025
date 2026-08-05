@@ -123,6 +123,42 @@ switch ($action) {
         break;
     }
 
+    /* ── Show/hide a worker from the attendance list ─────── */
+    case 'toggle_worker_active': {
+        $workerId = (int)($_POST['worker_id'] ?? 0);
+        if ($workerId <= 0) { ok_err('Invalid worker'); }
+
+        $stmt = db()->prepare('UPDATE workers SET is_active = NOT is_active WHERE id = :id');
+        $stmt->execute(['id' => $workerId]);
+        if ($stmt->rowCount() === 0) { ok_err('Worker not found'); }
+
+        $isActive = db()->prepare('SELECT is_active FROM workers WHERE id = :id');
+        $isActive->execute(['id' => $workerId]);
+
+        echo json_encode(['success' => true, 'is_active' => (bool)$isActive->fetchColumn()]);
+        break;
+    }
+
+    /* ── Delete a worker (only if never used in an attendance record) ── */
+    case 'delete_worker': {
+        $workerId = (int)($_POST['worker_id'] ?? 0);
+        if ($workerId <= 0) { ok_err('Invalid worker'); }
+
+        // Server-side guard — deleting a worker would CASCADE-delete every
+        // attendance record ever logged for them, across every project.
+        // The UI already hides this option once a worker has history, but
+        // enforce it here too in case that check is ever bypassed.
+        $count = db()->prepare('SELECT COUNT(*) FROM labour_attendance WHERE worker_id = :id');
+        $count->execute(['id' => $workerId]);
+        if ((int)$count->fetchColumn() > 0) {
+            ok_err('This worker has attendance records logged — hide them instead of deleting');
+        }
+
+        db()->prepare('DELETE FROM workers WHERE id = :id')->execute(['id' => $workerId]);
+        echo json_encode(['success' => true]);
+        break;
+    }
+
     /* ── Log a stock movement (IN / OUT) ─────────────────── */
     case 'log_stock': {
         $projectId  = trim($_POST['project_id']  ?? '');

@@ -27,6 +27,21 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $filterFrom)) $filterFrom = '';
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $filterTo))   $filterTo   = '';
 $hasFilters = $filterProject !== '' || $filterMaterial > 0 || $filterType !== '' || $filterFrom !== '' || $filterTo !== '';
 
+// Builds the URL for clicking a Current Stock balance card — applies that
+// material as the Transactions filter (preserving the other active
+// filters), or clears the material filter if that card is already active
+// (click again to deselect).
+function materialFilterUrl(int $materialId, string $filterProject, int $filterMaterial, string $filterType, string $filterFrom, string $filterTo): string {
+    $params = [
+        'project_id'  => $filterProject,
+        'material_id' => $filterMaterial === $materialId ? '' : $materialId,
+        'txn_type'    => $filterType,
+        'date_from'   => $filterFrom,
+        'date_to'     => $filterTo,
+    ];
+    return 'stock_log.php?' . http_build_query(array_filter($params, fn($v) => $v !== ''));
+}
+
 try {
     db()->query('SELECT 1');
 
@@ -129,9 +144,12 @@ function renderStockLogTotalLines(array $lines): string {
 .stock-balance-project + .stock-balance-project{margin-top:20px}
 .stock-balance-project-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
 .stock-balance-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
-.stock-balance-card{background:var(--bg);border:1px solid var(--border-2);border-radius:var(--r);padding:16px}
+.stock-balance-card{background:var(--bg);border:1.5px solid var(--border-2);border-radius:var(--r);padding:16px;display:block;position:relative;text-decoration:none;cursor:pointer;transition:background var(--t),border-color var(--t),transform var(--t),box-shadow var(--t)}
+.stock-balance-card:hover{border-color:var(--blue);background:var(--blue-pale);transform:translateY(-2px);box-shadow:var(--s1)}
+.stock-balance-card.is-selected{border-color:var(--blue);background:var(--blue-pale);box-shadow:0 0 0 1px var(--blue)}
+.stock-balance-check{position:absolute;top:12px;right:12px;color:var(--blue);font-size:15px}
 .stock-balance-card .mat-category{font-size:10px;font-weight:700;color:var(--gold-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
-.stock-balance-card .mat-name{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:6px}
+.stock-balance-card .mat-name{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:6px;padding-right:18px}
 .stock-balance-card .mat-qty{font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:var(--blue)}
 .stock-balance-card .mat-unit{font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
 .log-filter-form .form-group{margin-bottom:0}
@@ -262,13 +280,16 @@ function renderStockLogTotalLines(array $lines): string {
     <?php else: ?>
     <?php foreach ($balancesByProject as $rows): ?>
       <div class="stock-balance-grid">
-        <?php foreach ($rows as $b): ?>
-        <div class="stock-balance-card">
+        <?php foreach ($rows as $b): $isActive = $filterMaterial === (int)$b['material_id']; ?>
+        <a class="stock-balance-card<?= $isActive ? ' is-selected' : '' ?>"
+           href="<?= htmlspecialchars(materialFilterUrl((int)$b['material_id'], $filterProject, $filterMaterial, $filterType, $filterFrom, $filterTo)) ?>"
+           title="<?= $isActive ? 'Click to clear this filter' : 'Filter transactions to ' . htmlspecialchars($b['name']) ?>">
           <?php if ($b['category']): ?><div class="mat-category"><?= htmlspecialchars($b['category']) ?></div><?php endif ?>
           <div class="mat-name"><?= htmlspecialchars($b['name']) ?></div>
           <span class="mat-qty"><?= rtrim(rtrim(number_format((float)$b['balance'], 2), '0'), '.') ?></span>
           <span class="mat-unit"><?= htmlspecialchars($b['unit']) ?></span>
-        </div>
+          <?php if ($isActive): ?><i class="fa-solid fa-circle-check stock-balance-check"></i><?php endif ?>
+        </a>
         <?php endforeach ?>
       </div>
     <?php endforeach ?>
