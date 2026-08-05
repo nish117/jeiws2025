@@ -300,7 +300,10 @@ async function saveAttendance() {
   btn.disabled = false;
   if (r.success) {
     toast(`Saved attendance for ${r.saved} worker(s).`, 'ok');
-    setTimeout(() => location.reload(), 700);
+    if (r.duplicates && r.duplicates.length) {
+      toast(`Skipped possible duplicate worker(s) already recorded today under a different roster entry: ${r.duplicates.join(', ')}`, 'err');
+    }
+    setTimeout(() => location.reload(), r.duplicates && r.duplicates.length ? 2400 : 700);
   } else {
     toast(r.error || 'Save failed.', 'err');
   }

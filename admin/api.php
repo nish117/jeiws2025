@@ -365,9 +365,40 @@ switch ($action) {
         if (!in_array($status, ['present', 'absent', 'half_day'], true)) { ok_err('Invalid status'); }
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) { ok_err('Invalid date'); }
 
-        $exists = db()->prepare('SELECT 1 FROM labour_attendance WHERE id = :id');
-        $exists->execute(['id' => $attendanceId]);
-        if (!$exists->fetchColumn()) { ok_err('Attendance record not found'); }
+        $current = db()->prepare(
+            'SELECT la.project_id, la.worker_id, w.full_name
+             FROM labour_attendance la JOIN workers w ON w.id = la.worker_id
+             WHERE la.id = :id'
+        );
+        $current->execute(['id' => $attendanceId]);
+        $row = $current->fetch();
+        if (!$row) { ok_err('Attendance record not found'); }
+
+        // Absent workers are never stored — only present/half_day rows exist
+        // in labour_attendance. Marking a record absent here removes it
+        // instead of updating its status, keeping both save paths consistent.
+        if ($status === 'absent') {
+            db()->prepare('DELETE FROM labour_attendance WHERE id = :id')->execute(['id' => $attendanceId]);
+            echo json_encode(['success' => true, 'deleted' => true]);
+            break;
+        }
+
+        // Guard against a name-based duplicate on the target date — the
+        // same person recorded under a different worker_id, which the
+        // UNIQUE(project_id, worker_id, attendance_date) constraint alone
+        // wouldn't catch since it only compares IDs.
+        $dupCheck = db()->prepare(
+            'SELECT w.full_name FROM labour_attendance la
+             JOIN workers w ON w.id = la.worker_id
+             WHERE la.project_id = :pid AND la.attendance_date = :date AND la.worker_id != :wid'
+        );
+        $dupCheck->execute(['pid' => $row['project_id'], 'date' => $date, 'wid' => $row['worker_id']]);
+        $targetName = normalizeWorkerName($row['full_name']);
+        foreach ($dupCheck->fetchAll() as $other) {
+            if (normalizeWorkerName($other['full_name']) === $targetName) {
+                ok_err('Another record for this worker (under a different roster entry) already exists on that date');
+            }
+        }
 
         try {
             db()->prepare(

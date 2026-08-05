@@ -13,6 +13,14 @@ function currentSiteUserId(): int {
     return (int)($_SESSION['site_user_id'] ?? 0);
 }
 
+// Normalizes a worker's name for duplicate comparison — catches the same
+// person entered twice in the roster under different worker_ids (which the
+// DB's UNIQUE(project_id, worker_id, attendance_date) constraint can't
+// catch, since it only sees IDs, not names).
+function normalizeWorkerName(string $name): string {
+    return mb_strtolower(trim(preg_replace('/\s+/', ' ', $name)));
+}
+
 // Projects assigned to the given site user, ordered by title.
 // Not filtered by is_active — that flag tracks public-site publish
 // state, which is unrelated to whether site staff should be able to

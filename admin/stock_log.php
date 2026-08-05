@@ -48,7 +48,7 @@ try {
         $whereSql = 'WHERE ' . implode(' AND ', $where);
 
         $stmt = db()->prepare(
-            "SELECT ms.id, ms.txn_date, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
+            "SELECT ms.id, ms.txn_date, ms.nepali_date, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
                     m.name AS material_name, m.unit, m.category,
                     p.id AS project_id, p.title AS project_title,
                     u.username AS recorded_by_username
@@ -302,12 +302,13 @@ function renderStockLogTotalLines(array $lines): string {
     <div class="site-table-wrap">
       <table class="site-table">
         <thead>
-          <tr><th>Date</th><th>Category</th><th>Material</th><th>Type</th><th>Qty</th><th>User</th><th>Notes</th></tr>
+          <tr><th>Date</th><th>Nepali Date</th><th>Category</th><th>Material</th><th>Type</th><th>Qty</th><th>User</th><th>Notes</th></tr>
         </thead>
         <tbody>
         <?php foreach ($history as $h): ?>
           <tr>
             <td><?= htmlspecialchars($h['txn_date']) ?></td>
+            <td><?= htmlspecialchars($h['nepali_date'] ?? '—') ?></td>
             <td><?= htmlspecialchars($h['category'] ?? '—') ?></td>
             <td><?= htmlspecialchars($h['material_name']) ?></td>
             <td><span class="status-badge <?= htmlspecialchars($h['txn_type']) ?>"><?= strtoupper(htmlspecialchars($h['txn_type'])) ?></span></td>

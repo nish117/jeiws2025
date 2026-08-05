@@ -312,6 +312,13 @@ function removeProjectFromDb(string $id): void {
     }
 }
 
+// Normalizes a worker's name for duplicate comparison (mirrors
+// site/functions.php) — catches the same person entered twice in the
+// roster under different worker_ids.
+function normalizeWorkerName(string $name): string {
+    return mb_strtolower(trim(preg_replace('/\s+/', ' ', $name)));
+}
+
 // ── Stock log helpers (mirrors site/functions.php) ──────
 // Sums IN vs OUT quantities from a set of materials_stock rows, grouped
 // by category then unit — materials can be tracked in different units

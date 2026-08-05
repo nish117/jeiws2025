@@ -40,7 +40,6 @@ export function initializeHeader() {
                     <li><a href="${isGalleryPage ? './#services' : '#services'}" class="nav-link">Services</a></li>
                     <li><a href="${isGalleryPage ? './#projects' : '#projects'}" class="nav-link">Projects</a></li>
                     <li><a href="${isGalleryPage ? './#team' : '#team'}" class="nav-link">Team</a></li>
-                    <li><a href="${isGalleryPage ? './#why-us' : '#why-us'}" class="nav-link">Why Us</a></li>
                     <li><a href="vacancies.html" class="nav-link"><i class="fas fa-briefcase"></i> Careers</a></li>
                     <li><a href="area-converter.html" class="nav-link nav-link-tool"><i class="fas fa-ruler-combined"></i> Area Tool</a></li>
                     <li><a href="${isGalleryPage ? './#contact' : '#contact'}" class="nav-link nav-link-cta">Contact</a></li>
