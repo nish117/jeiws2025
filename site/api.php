@@ -263,6 +263,117 @@ switch ($action) {
         break;
     }
 
+    /* ══ Read-only endpoints added for the mobile app — purely additive,
+       mirror what the PHP pages already compute server-side, don't touch
+       or change any existing action/page. ══ */
+
+    /* ── Projects assigned to the current site user ──────── */
+    case 'list_projects': {
+        echo json_encode(['success' => true, 'projects' => getAssignedProjects($userId)]);
+        break;
+    }
+
+    /* ── Everything the Attendance screen needs for one project+date ── */
+    case 'get_attendance_page': {
+        $projectId = trim($_POST['project_id'] ?? '');
+        $date      = trim($_POST['date'] ?? '');
+        if (!$projectId || !userCanAccessProject($userId, $projectId)) { ok_err('Project not found or not assigned to you'); }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) $date = date('Y-m-d');
+
+        $pdo = db();
+
+        $workers = $pdo->query('SELECT id, full_name, category FROM workers WHERE is_active = TRUE ORDER BY full_name')->fetchAll();
+
+        $roster = $pdo->query(
+            'SELECT w.id, w.full_name, w.category, w.is_active, COUNT(la.id) AS attendance_count
+             FROM workers w
+             LEFT JOIN labour_attendance la ON la.worker_id = w.id
+             GROUP BY w.id, w.full_name, w.category, w.is_active
+             ORDER BY w.full_name'
+        )->fetchAll();
+
+        $stmt = $pdo->prepare('SELECT worker_id, status FROM labour_attendance WHERE project_id = :pid AND attendance_date = :date');
+        $stmt->execute(['pid' => $projectId, 'date' => $date]);
+        $existing = array_column($stmt->fetchAll(), 'status', 'worker_id');
+
+        $stmt = $pdo->prepare(
+            'SELECT la.id, la.attendance_date, la.nepali_date, w.full_name, w.category, la.status
+             FROM labour_attendance la
+             JOIN workers w ON w.id = la.worker_id
+             WHERE la.project_id = :pid
+             ORDER BY la.attendance_date DESC, w.full_name
+             LIMIT 100'
+        );
+        $stmt->execute(['pid' => $projectId]);
+        $history = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare('SELECT status, COUNT(*) AS cnt FROM labour_attendance WHERE project_id = :pid GROUP BY status');
+        $stmt->execute(['pid' => $projectId]);
+        $statusCounts = array_column($stmt->fetchAll(), 'cnt', 'status');
+        $presentDays  = (int)($statusCounts['present']  ?? 0);
+        $absentDays   = (int)($statusCounts['absent']   ?? 0);
+        $halfDays     = (int)($statusCounts['half_day'] ?? 0);
+
+        $stmt = $pdo->prepare(
+            'SELECT w.id AS worker_id, w.full_name, w.category, la.status, COUNT(*) AS cnt
+             FROM labour_attendance la
+             JOIN workers w ON w.id = la.worker_id
+             WHERE la.project_id = :pid
+             GROUP BY w.id, w.full_name, w.category, la.status'
+        );
+        $stmt->execute(['pid' => $projectId]);
+        $byWorker = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $wid = $row['worker_id'];
+            if (!isset($byWorker[$wid])) {
+                $byWorker[$wid] = ['worker_id' => (int)$wid, 'full_name' => $row['full_name'], 'category' => $row['category'], 'present' => 0, 'absent' => 0, 'half_day' => 0];
+            }
+            $byWorker[$wid][$row['status']] = (int)$row['cnt'];
+        }
+        $byWorker = array_values($byWorker);
+        usort($byWorker, fn($a, $b) => strcasecmp($a['full_name'], $b['full_name']));
+
+        echo json_encode([
+            'success'  => true,
+            'workers'  => $workers,
+            'roster'   => $roster,
+            'existing' => (object)$existing,
+            'history'  => $history,
+            'summary'  => ['present' => $presentDays, 'absent' => $absentDays, 'half_day' => $halfDays, 'man_days' => $presentDays + $halfDays * 0.5],
+            'by_worker' => $byWorker,
+        ]);
+        break;
+    }
+
+    /* ── Everything the Materials Stock screen needs for one project ── */
+    case 'get_stock_page': {
+        $projectId = trim($_POST['project_id'] ?? '');
+        if (!$projectId || !userCanAccessProject($userId, $projectId)) { ok_err('Project not found or not assigned to you'); }
+
+        $pdo = db();
+
+        $materials = $pdo->query(
+            "SELECT id, name, unit, category FROM materials WHERE is_active = TRUE
+             ORDER BY (category IS NULL), category, name"
+        )->fetchAll();
+
+        $stmt = $pdo->prepare(
+            "SELECT m.id, m.name, m.unit, m.category,
+                    COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) AS balance
+             FROM materials_stock ms
+             JOIN materials m ON m.id = ms.material_id
+             WHERE ms.project_id = :pid
+             GROUP BY m.id, m.name, m.unit, m.category
+             HAVING COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) <> 0
+             ORDER BY (m.category IS NULL), m.category, m.name"
+        );
+        $stmt->execute(['pid' => $projectId]);
+        $balances = $stmt->fetchAll();
+
+        echo json_encode(['success' => true, 'materials' => $materials, 'balances' => $balances]);
+        break;
+    }
+
     default:
         echo json_encode(['error' => 'Unknown action']);
 }

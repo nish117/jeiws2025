@@ -420,6 +420,257 @@ switch ($action) {
         break;
     }
 
+    /* ══ Read-only endpoints added for the mobile app — purely additive,
+       mirror what the PHP pages already compute server-side, don't touch
+       or change any existing action/page. ══ */
+
+    /* ── All projects (CMS source of truth: data/projects.json) ──── */
+    case 'list_projects': {
+        echo json_encode(['success' => true, 'projects' => array_values(loadProjects())]);
+        break;
+    }
+
+    /* ── All site users + how many projects each is assigned to ──── */
+    case 'list_site_users': {
+        $users = db()->query(
+            'SELECT u.id, u.username, u.full_name, u.is_active,
+                    COUNT(up.project_id) AS project_count
+             FROM site_users u
+             LEFT JOIN user_projects up ON up.user_id = u.id
+             GROUP BY u.id
+             ORDER BY u.full_name'
+        )->fetchAll();
+        echo json_encode(['success' => true, 'users' => $users]);
+        break;
+    }
+
+    /* ── Project IDs a given site user is assigned to (for the edit form) ── */
+    case 'get_user_projects': {
+        $targetUserId = (int)($_POST['user_id'] ?? 0);
+        if ($targetUserId <= 0) { ok_err('Invalid user'); }
+        $stmt = db()->prepare('SELECT project_id FROM user_projects WHERE user_id = :id');
+        $stmt->execute(['id' => $targetUserId]);
+        echo json_encode(['success' => true, 'project_ids' => array_column($stmt->fetchAll(), 'project_id')]);
+        break;
+    }
+
+    /* ── Materials catalog with usage counts ──────────────────────── */
+    case 'list_materials': {
+        $materials = db()->query(
+            'SELECT m.id, m.name, m.unit, m.category, m.is_active, COUNT(ms.id) AS txn_count
+             FROM materials m
+             LEFT JOIN materials_stock ms ON ms.material_id = m.id
+             GROUP BY m.id
+             ORDER BY (m.category IS NULL), m.category, m.name'
+        )->fetchAll();
+        echo json_encode(['success' => true, 'materials' => $materials]);
+        break;
+    }
+
+    /* ── Global worker roster (for the Attendance Log's worker filter) ── */
+    case 'list_workers': {
+        $workers = db()->query(
+            'SELECT w.id, w.full_name, w.category, w.daily_wage, w.is_active, COUNT(la.id) AS attendance_count
+             FROM workers w
+             LEFT JOIN labour_attendance la ON la.worker_id = w.id
+             GROUP BY w.id, w.full_name, w.category, w.daily_wage, w.is_active
+             ORDER BY w.full_name'
+        )->fetchAll();
+        echo json_encode(['success' => true, 'workers' => $workers]);
+        break;
+    }
+
+    /* ── Add a worker to the roster ──────────────────────── */
+    case 'add_worker': {
+        $fullName  = trim($_POST['full_name'] ?? '');
+        $category  = trim($_POST['category']  ?? '');
+        $dailyWage = trim($_POST['daily_wage'] ?? '');
+        $phone     = trim($_POST['phone']      ?? '');
+
+        if ($fullName === '') { ok_err('Worker name is required'); }
+
+        $pdo  = db();
+        $stmt = $pdo->prepare(
+            'INSERT INTO workers (full_name, category, daily_wage, phone)
+             VALUES (:name, :cat, :wage, :phone)'
+        );
+        $stmt->execute([
+            'name'  => $fullName,
+            'cat'   => $category ?: null,
+            'wage'  => $dailyWage !== '' ? $dailyWage : null,
+            'phone' => $phone ?: null,
+        ]);
+
+        echo json_encode(['success' => true, 'worker_id' => $pdo->lastInsertId()]);
+        break;
+    }
+
+    /* ── Show/hide a worker from the attendance list ─────── */
+    case 'toggle_worker_active': {
+        $workerId = (int)($_POST['worker_id'] ?? 0);
+        if ($workerId <= 0) { ok_err('Invalid worker'); }
+
+        $stmt = db()->prepare('UPDATE workers SET is_active = NOT is_active WHERE id = :id');
+        $stmt->execute(['id' => $workerId]);
+        if ($stmt->rowCount() === 0) { ok_err('Worker not found'); }
+
+        $isActive = db()->prepare('SELECT is_active FROM workers WHERE id = :id');
+        $isActive->execute(['id' => $workerId]);
+
+        echo json_encode(['success' => true, 'is_active' => (bool)$isActive->fetchColumn()]);
+        break;
+    }
+
+    /* ── Delete a worker (only if never used in an attendance record) ── */
+    case 'delete_worker': {
+        $workerId = (int)($_POST['worker_id'] ?? 0);
+        if ($workerId <= 0) { ok_err('Invalid worker'); }
+
+        // Deleting a worker would CASCADE-delete every attendance record
+        // ever logged for them, across every project — the UI already
+        // hides this option once a worker has history, but enforce it
+        // here too in case that check is ever bypassed.
+        $count = db()->prepare('SELECT COUNT(*) FROM labour_attendance WHERE worker_id = :id');
+        $count->execute(['id' => $workerId]);
+        if ((int)$count->fetchColumn() > 0) {
+            ok_err('This worker has attendance records logged — hide them instead of deleting');
+        }
+
+        db()->prepare('DELETE FROM workers WHERE id = :id')->execute(['id' => $workerId]);
+        echo json_encode(['success' => true]);
+        break;
+    }
+
+    /* ── Stock Log page: current stock + totals + transactions, filtered ── */
+    case 'get_stock_log': {
+        $projectId  = trim($_POST['project_id']   ?? '');
+        $materialId = (int)($_POST['material_id'] ?? 0);
+        $txnType    = trim($_POST['txn_type']     ?? '');
+        $dateFrom   = trim($_POST['date_from']    ?? '');
+        $dateTo     = trim($_POST['date_to']      ?? '');
+        if (!in_array($txnType, ['in', 'out'], true)) $txnType = '';
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) $dateFrom = '';
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo))   $dateTo   = '';
+        if (!$projectId) { ok_err('Select a project'); }
+
+        $pdo = db();
+        $where  = ['ms.project_id = :pid'];
+        $params = ['pid' => $projectId];
+        if ($materialId > 0) { $where[] = 'ms.material_id = :mid'; $params['mid']   = $materialId; }
+        if ($txnType !== '') { $where[] = 'ms.txn_type = :type';   $params['type']  = $txnType; }
+        if ($dateFrom !== '') { $where[] = 'ms.txn_date >= :dfrom'; $params['dfrom'] = $dateFrom; }
+        if ($dateTo !== '')   { $where[] = 'ms.txn_date <= :dto';   $params['dto']   = $dateTo; }
+        $whereSql = 'WHERE ' . implode(' AND ', $where);
+
+        $stmt = $pdo->prepare(
+            "SELECT ms.id, ms.txn_date, ms.nepali_date, ms.txn_type, ms.quantity, ms.bundle_qty, ms.notes,
+                    m.name AS material_name, m.unit, m.category,
+                    u.username AS recorded_by_username
+             FROM materials_stock ms
+             JOIN materials m ON m.id = ms.material_id
+             LEFT JOIN site_users u ON u.id = ms.recorded_by
+             $whereSql
+             ORDER BY ms.txn_date DESC, ms.id DESC
+             LIMIT 500"
+        );
+        $stmt->execute($params);
+        $history = $stmt->fetchAll();
+        $totals  = computeStockTotals($history);
+
+        $stmt = $pdo->prepare(
+            "SELECT m.id AS material_id, m.name, m.unit, m.category,
+                    COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) AS balance
+             FROM materials_stock ms
+             JOIN materials m ON m.id = ms.material_id
+             WHERE ms.project_id = :pid
+             GROUP BY m.id, m.name, m.unit, m.category
+             HAVING COALESCE(SUM(CASE WHEN ms.txn_type = 'in' THEN ms.quantity ELSE -ms.quantity END), 0) <> 0
+             ORDER BY (m.category IS NULL), m.category, m.name"
+        );
+        $stmt->execute(['pid' => $projectId]);
+        $balances = $stmt->fetchAll();
+
+        echo json_encode(['success' => true, 'history' => $history, 'totals' => $totals, 'balances' => $balances]);
+        break;
+    }
+
+    /* ── Attendance Log page: summary + by-worker + records, filtered ── */
+    case 'get_attendance_log': {
+        $projectId = trim($_POST['project_id'] ?? '');
+        $workerId  = (int)($_POST['worker_id']  ?? 0);
+        $status    = trim($_POST['status']      ?? '');
+        $dateFrom  = trim($_POST['date_from']   ?? '');
+        $dateTo    = trim($_POST['date_to']     ?? '');
+        if (!in_array($status, ['present', 'absent', 'half_day'], true)) $status = '';
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) $dateFrom = '';
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo))   $dateTo   = '';
+        if (!$projectId) { ok_err('Select a project'); }
+
+        $pdo = db();
+        $where  = ['la.project_id = :pid'];
+        $params = ['pid' => $projectId];
+        if ($workerId > 0)    { $where[] = 'la.worker_id = :wid';          $params['wid']   = $workerId; }
+        if ($status !== '')   { $where[] = 'la.status = :status';         $params['status'] = $status; }
+        if ($dateFrom !== '') { $where[] = 'la.attendance_date >= :dfrom'; $params['dfrom'] = $dateFrom; }
+        if ($dateTo !== '')   { $where[] = 'la.attendance_date <= :dto';   $params['dto']   = $dateTo; }
+        $whereSql = 'WHERE ' . implode(' AND ', $where);
+
+        $stmt = $pdo->prepare(
+            "SELECT la.id, la.attendance_date, la.nepali_date, la.status, la.notes,
+                    w.id AS worker_id, w.full_name AS worker_name, w.category AS worker_category,
+                    u.username AS recorded_by_username
+             FROM labour_attendance la
+             JOIN workers w  ON w.id = la.worker_id
+             LEFT JOIN site_users u ON u.id = la.recorded_by
+             $whereSql
+             ORDER BY la.attendance_date DESC, w.full_name
+             LIMIT 500"
+        );
+        $stmt->execute($params);
+        $history = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare("SELECT la.status, COUNT(*) AS cnt FROM labour_attendance la $whereSql GROUP BY la.status");
+        $stmt->execute($params);
+        $statusCounts = array_column($stmt->fetchAll(), 'cnt', 'status');
+        $presentDays  = (int)($statusCounts['present']  ?? 0);
+        $absentDays   = (int)($statusCounts['absent']   ?? 0);
+        $halfDays     = (int)($statusCounts['half_day'] ?? 0);
+
+        $workerWhere  = ['la.project_id = :pid'];
+        $workerParams = ['pid' => $projectId];
+        if ($workerId > 0)    { $workerWhere[] = 'la.worker_id = :wid';          $workerParams['wid']   = $workerId; }
+        if ($dateFrom !== '') { $workerWhere[] = 'la.attendance_date >= :dfrom'; $workerParams['dfrom'] = $dateFrom; }
+        if ($dateTo !== '')   { $workerWhere[] = 'la.attendance_date <= :dto';   $workerParams['dto']   = $dateTo; }
+        $workerWhereSql = 'WHERE ' . implode(' AND ', $workerWhere);
+
+        $stmt = $pdo->prepare(
+            "SELECT w.id AS worker_id, w.full_name, w.category, la.status, COUNT(*) AS cnt
+             FROM labour_attendance la
+             JOIN workers w ON w.id = la.worker_id
+             $workerWhereSql
+             GROUP BY w.id, w.full_name, w.category, la.status"
+        );
+        $stmt->execute($workerParams);
+        $byWorker = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $wid = $row['worker_id'];
+            if (!isset($byWorker[$wid])) {
+                $byWorker[$wid] = ['worker_id' => (int)$wid, 'full_name' => $row['full_name'], 'category' => $row['category'], 'present' => 0, 'absent' => 0, 'half_day' => 0];
+            }
+            $byWorker[$wid][$row['status']] = (int)$row['cnt'];
+        }
+        $byWorker = array_values($byWorker);
+        usort($byWorker, fn($a, $b) => strcasecmp($a['full_name'], $b['full_name']));
+
+        echo json_encode([
+            'success' => true,
+            'history' => $history,
+            'summary' => ['present' => $presentDays, 'absent' => $absentDays, 'half_day' => $halfDays, 'man_days' => $presentDays + $halfDays * 0.5],
+            'by_worker' => $byWorker,
+        ]);
+        break;
+    }
+
     default:
         echo json_encode(['error' => 'Unknown action']);
 }

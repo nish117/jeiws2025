@@ -55,6 +55,7 @@ $allProjects = array_filter(loadProjects(), fn($p) => !empty($p['id']));
     <a href="materials.php">Materials</a>
     <a href="stock_log.php">Stock Log</a>
     <a href="attendance_log.php">Attendance</a>
+    <a href="workers.php">Workers</a>
     <a href="../index.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Site</a>
     <a href="logout.php" class="btn-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
   </div>
