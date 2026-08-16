@@ -469,26 +469,35 @@ switch ($action) {
 
     /* ── Global worker roster (for the Attendance Log's worker filter) ── */
     case 'list_workers': {
+        ensureWorkersDeletedColumn();
+        ensureWorkerProjectsTable();
         $workers = db()->query(
-            'SELECT w.id, w.full_name, w.category, w.daily_wage, w.is_active, COUNT(la.id) AS attendance_count
+            "SELECT w.id, w.full_name, w.category, w.daily_wage, w.is_active, COUNT(DISTINCT la.id) AS attendance_count,
+                    GROUP_CONCAT(DISTINCT p.title ORDER BY p.title SEPARATOR ', ') AS project_names
              FROM workers w
              LEFT JOIN labour_attendance la ON la.worker_id = w.id
+             LEFT JOIN worker_projects wp ON wp.worker_id = w.id
+             LEFT JOIN projects p ON p.id = wp.project_id
+             WHERE w.is_deleted = 0
              GROUP BY w.id, w.full_name, w.category, w.daily_wage, w.is_active
-             ORDER BY w.full_name'
+             ORDER BY w.full_name"
         )->fetchAll();
         echo json_encode(['success' => true, 'workers' => $workers]);
         break;
     }
 
-    /* ── Add a worker to the roster ──────────────────────── */
+    /* ── Add a worker, optionally assigning them to project(s) right away ── */
     case 'add_worker': {
-        $fullName  = trim($_POST['full_name'] ?? '');
-        $category  = trim($_POST['category']  ?? '');
-        $dailyWage = trim($_POST['daily_wage'] ?? '');
-        $phone     = trim($_POST['phone']      ?? '');
+        $fullName   = trim($_POST['full_name'] ?? '');
+        $category   = trim($_POST['category']  ?? '');
+        $dailyWage  = trim($_POST['daily_wage'] ?? '');
+        $phone      = trim($_POST['phone']      ?? '');
+        $projectIds = $_POST['project_ids'] ?? [];
+        if (!is_array($projectIds)) { $projectIds = []; }
 
         if ($fullName === '') { ok_err('Worker name is required'); }
 
+        ensureWorkerProjectsTable();
         $pdo  = db();
         $stmt = $pdo->prepare(
             'INSERT INTO workers (full_name, category, daily_wage, phone)
@@ -500,8 +509,37 @@ switch ($action) {
             'wage'  => $dailyWage !== '' ? $dailyWage : null,
             'phone' => $phone ?: null,
         ]);
+        $workerId = (int)$pdo->lastInsertId();
 
-        echo json_encode(['success' => true, 'worker_id' => $pdo->lastInsertId()]);
+        if ($projectIds) {
+            $assign = $pdo->prepare('INSERT IGNORE INTO worker_projects (worker_id, project_id) VALUES (:wid, :pid)');
+            foreach ($projectIds as $pid) {
+                $pid = trim((string)$pid);
+                if ($pid !== '') { $assign->execute(['wid' => $workerId, 'pid' => $pid]); }
+            }
+        }
+
+        echo json_encode(['success' => true, 'worker_id' => $workerId]);
+        break;
+    }
+
+    /* ── Change which projects a worker is assigned to ────── */
+    case 'set_worker_projects': {
+        $workerId   = (int)($_POST['worker_id'] ?? 0);
+        $projectIds = $_POST['project_ids'] ?? [];
+        if ($workerId <= 0) { ok_err('Invalid worker'); }
+        if (!is_array($projectIds)) { $projectIds = []; }
+
+        ensureWorkerProjectsTable();
+        $pdo = db();
+        $pdo->prepare('DELETE FROM worker_projects WHERE worker_id = :wid')->execute(['wid' => $workerId]);
+        $assign = $pdo->prepare('INSERT INTO worker_projects (worker_id, project_id) VALUES (:wid, :pid)');
+        foreach ($projectIds as $pid) {
+            $pid = trim((string)$pid);
+            if ($pid !== '') { $assign->execute(['wid' => $workerId, 'pid' => $pid]); }
+        }
+
+        echo json_encode(['success' => true]);
         break;
     }
 
@@ -521,22 +559,21 @@ switch ($action) {
         break;
     }
 
-    /* ── Delete a worker (only if never used in an attendance record) ── */
+    /* ── Remove a worker from the roster (soft-delete) ───── */
     case 'delete_worker': {
         $workerId = (int)($_POST['worker_id'] ?? 0);
         if ($workerId <= 0) { ok_err('Invalid worker'); }
 
-        // Deleting a worker would CASCADE-delete every attendance record
-        // ever logged for them, across every project — the UI already
-        // hides this option once a worker has history, but enforce it
-        // here too in case that check is ever bypassed.
-        $count = db()->prepare('SELECT COUNT(*) FROM labour_attendance WHERE worker_id = :id');
-        $count->execute(['id' => $workerId]);
-        if ((int)$count->fetchColumn() > 0) {
-            ok_err('This worker has attendance records logged — hide them instead of deleting');
-        }
+        // Soft-delete: the row stays (and so does every attendance record
+        // still pointing at it via worker_id) — only is_deleted flips, so
+        // the worker disappears from the roster but past history is
+        // completely unaffected.
+        ensureWorkersDeletedColumn();
+        $exists = db()->prepare('SELECT COUNT(*) FROM workers WHERE id = :id');
+        $exists->execute(['id' => $workerId]);
+        if ((int)$exists->fetchColumn() === 0) { ok_err('Worker not found'); }
 
-        db()->prepare('DELETE FROM workers WHERE id = :id')->execute(['id' => $workerId]);
+        db()->prepare('UPDATE workers SET is_deleted = 1, is_active = 0 WHERE id = :id')->execute(['id' => $workerId]);
         echo json_encode(['success' => true]);
         break;
     }

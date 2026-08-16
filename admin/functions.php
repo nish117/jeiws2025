@@ -319,6 +319,47 @@ function normalizeWorkerName(string $name): string {
     return mb_strtolower(trim(preg_replace('/\s+/', ' ', $name)));
 }
 
+// Deleting a worker used to be a hard DELETE, blocked once they had any
+// attendance history (the FK is ON DELETE CASCADE — a real delete would
+// wipe that history). Deletion is now a soft-delete via this column so
+// the worker disappears from the roster while every past attendance
+// record (still linked by worker_id) stays intact. Self-migrating since
+// there's no way to run a schema migration directly against the live
+// production database from here.
+function ensureWorkersDeletedColumn(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    $pdo = db();
+    $exists = (bool)$pdo->query(
+        "SELECT COUNT(*) FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'workers' AND COLUMN_NAME = 'is_deleted'"
+    )->fetchColumn();
+    if (!$exists) {
+        $pdo->exec('ALTER TABLE workers ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0');
+    }
+}
+
+// Workers are now scoped to the project(s) they're added under (a laborer
+// can be assigned to several projects) instead of one global pool visible
+// to every project. Self-migrating for the same reason as above.
+function ensureWorkerProjectsTable(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    db()->exec(
+        'CREATE TABLE IF NOT EXISTS worker_projects (
+            worker_id   INT         NOT NULL,
+            project_id  VARCHAR(64) COLLATE utf8mb4_general_ci NOT NULL,
+            is_active   TINYINT(1)  NOT NULL DEFAULT 1,
+            assigned_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (worker_id, project_id),
+            FOREIGN KEY (worker_id)  REFERENCES workers(id)  ON DELETE CASCADE,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+    );
+}
+
 // ── Stock log helpers (mirrors site/functions.php) ──────
 // Sums IN vs OUT quantities from a set of materials_stock rows, grouped
 // by category then unit — materials can be tracked in different units

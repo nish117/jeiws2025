@@ -98,15 +98,18 @@ switch ($action) {
         break;
     }
 
-    /* ── Add a worker to the global roster ──────────────── */
+    /* ── Add a brand-new worker to this project's roster ──── */
     case 'add_worker': {
+        $projectId = trim($_POST['project_id'] ?? '');
         $fullName  = trim($_POST['full_name'] ?? '');
         $category  = trim($_POST['category']  ?? '');
         $dailyWage = trim($_POST['daily_wage'] ?? '');
         $phone     = trim($_POST['phone']      ?? '');
 
+        if (!$projectId || !userCanAccessProject($userId, $projectId)) { ok_err('Project not found or not assigned to you'); }
         if ($fullName === '') { ok_err('Worker name is required'); }
 
+        ensureWorkerProjectsTable();
         $pdo  = db();
         $stmt = $pdo->prepare(
             'INSERT INTO workers (full_name, category, daily_wage, phone)
@@ -118,43 +121,88 @@ switch ($action) {
             'wage'  => $dailyWage !== '' ? $dailyWage : null,
             'phone' => $phone ?: null,
         ]);
+        $workerId = (int)$pdo->lastInsertId();
 
-        echo json_encode(['success' => true, 'worker_id' => $pdo->lastInsertId()]);
+        $pdo->prepare('INSERT INTO worker_projects (worker_id, project_id) VALUES (:wid, :pid)')
+            ->execute(['wid' => $workerId, 'pid' => $projectId]);
+
+        echo json_encode(['success' => true, 'worker_id' => $workerId]);
         break;
     }
 
-    /* ── Show/hide a worker from the attendance list ─────── */
-    case 'toggle_worker_active': {
-        $workerId = (int)($_POST['worker_id'] ?? 0);
+    /* ── List workers already on OTHER projects, for "add existing worker" ── */
+    case 'list_unassigned_workers': {
+        $projectId = trim($_POST['project_id'] ?? '');
+        if (!$projectId || !userCanAccessProject($userId, $projectId)) { ok_err('Project not found or not assigned to you'); }
+
+        ensureWorkersDeletedColumn();
+        ensureWorkerProjectsTable();
+        $stmt = db()->prepare(
+            'SELECT w.id, w.full_name, w.category
+             FROM workers w
+             WHERE w.is_deleted = 0
+               AND w.id NOT IN (SELECT worker_id FROM worker_projects WHERE project_id = :pid)
+             ORDER BY w.full_name'
+        );
+        $stmt->execute(['pid' => $projectId]);
+        echo json_encode(['success' => true, 'workers' => $stmt->fetchAll()]);
+        break;
+    }
+
+    /* ── Assign an existing worker (from another project) to this one ── */
+    case 'assign_worker': {
+        $projectId = trim($_POST['project_id'] ?? '');
+        $workerId  = (int)($_POST['worker_id'] ?? 0);
+        if (!$projectId || !userCanAccessProject($userId, $projectId)) { ok_err('Project not found or not assigned to you'); }
         if ($workerId <= 0) { ok_err('Invalid worker'); }
 
-        $stmt = db()->prepare('UPDATE workers SET is_active = NOT is_active WHERE id = :id');
-        $stmt->execute(['id' => $workerId]);
-        if ($stmt->rowCount() === 0) { ok_err('Worker not found'); }
+        ensureWorkerProjectsTable();
+        $pdo = db();
+        $exists = $pdo->prepare('SELECT COUNT(*) FROM workers WHERE id = :id AND is_deleted = 0');
+        $exists->execute(['id' => $workerId]);
+        if ((int)$exists->fetchColumn() === 0) { ok_err('Worker not found'); }
 
-        $isActive = db()->prepare('SELECT is_active FROM workers WHERE id = :id');
-        $isActive->execute(['id' => $workerId]);
+        $pdo->prepare(
+            'INSERT INTO worker_projects (worker_id, project_id) VALUES (:wid, :pid)
+             ON DUPLICATE KEY UPDATE is_active = 1'
+        )->execute(['wid' => $workerId, 'pid' => $projectId]);
+
+        echo json_encode(['success' => true]);
+        break;
+    }
+
+    /* ── Show/hide a worker from this project's attendance list ── */
+    case 'toggle_worker_active': {
+        $projectId = trim($_POST['project_id'] ?? '');
+        $workerId  = (int)($_POST['worker_id'] ?? 0);
+        if (!$projectId || !userCanAccessProject($userId, $projectId)) { ok_err('Project not found or not assigned to you'); }
+        if ($workerId <= 0) { ok_err('Invalid worker'); }
+
+        ensureWorkerProjectsTable();
+        $stmt = db()->prepare('UPDATE worker_projects SET is_active = NOT is_active WHERE worker_id = :wid AND project_id = :pid');
+        $stmt->execute(['wid' => $workerId, 'pid' => $projectId]);
+        if ($stmt->rowCount() === 0) { ok_err('Worker not found on this project'); }
+
+        $isActive = db()->prepare('SELECT is_active FROM worker_projects WHERE worker_id = :wid AND project_id = :pid');
+        $isActive->execute(['wid' => $workerId, 'pid' => $projectId]);
 
         echo json_encode(['success' => true, 'is_active' => (bool)$isActive->fetchColumn()]);
         break;
     }
 
-    /* ── Delete a worker (only if never used in an attendance record) ── */
+    /* ── Remove a worker from this project's roster only ──── */
     case 'delete_worker': {
-        $workerId = (int)($_POST['worker_id'] ?? 0);
+        $projectId = trim($_POST['project_id'] ?? '');
+        $workerId  = (int)($_POST['worker_id'] ?? 0);
+        if (!$projectId || !userCanAccessProject($userId, $projectId)) { ok_err('Project not found or not assigned to you'); }
         if ($workerId <= 0) { ok_err('Invalid worker'); }
 
-        // Server-side guard — deleting a worker would CASCADE-delete every
-        // attendance record ever logged for them, across every project.
-        // The UI already hides this option once a worker has history, but
-        // enforce it here too in case that check is ever bypassed.
-        $count = db()->prepare('SELECT COUNT(*) FROM labour_attendance WHERE worker_id = :id');
-        $count->execute(['id' => $workerId]);
-        if ((int)$count->fetchColumn() > 0) {
-            ok_err('This worker has attendance records logged — hide them instead of deleting');
-        }
-
-        db()->prepare('DELETE FROM workers WHERE id = :id')->execute(['id' => $workerId]);
+        // Unassigns the worker from this project only — their global
+        // identity and every attendance record (here and on any other
+        // project) are completely untouched.
+        ensureWorkerProjectsTable();
+        db()->prepare('DELETE FROM worker_projects WHERE worker_id = :wid AND project_id = :pid')
+            ->execute(['wid' => $workerId, 'pid' => $projectId]);
         echo json_encode(['success' => true]);
         break;
     }
@@ -281,16 +329,30 @@ switch ($action) {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) $date = date('Y-m-d');
 
         $pdo = db();
+        ensureWorkersDeletedColumn();
+        ensureWorkerProjectsTable();
 
-        $workers = $pdo->query('SELECT id, full_name, category FROM workers WHERE is_active = TRUE ORDER BY full_name')->fetchAll();
-
-        $roster = $pdo->query(
-            'SELECT w.id, w.full_name, w.category, w.is_active, COUNT(la.id) AS attendance_count
+        $stmt = $pdo->prepare(
+            'SELECT w.id, w.full_name, w.category
              FROM workers w
-             LEFT JOIN labour_attendance la ON la.worker_id = w.id
-             GROUP BY w.id, w.full_name, w.category, w.is_active
+             JOIN worker_projects wp ON wp.worker_id = w.id AND wp.project_id = :pid
+             WHERE w.is_deleted = 0 AND wp.is_active = 1
              ORDER BY w.full_name'
-        )->fetchAll();
+        );
+        $stmt->execute(['pid' => $projectId]);
+        $workers = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare(
+            'SELECT w.id, w.full_name, w.category, wp.is_active, COUNT(la.id) AS attendance_count
+             FROM workers w
+             JOIN worker_projects wp ON wp.worker_id = w.id AND wp.project_id = :pid
+             LEFT JOIN labour_attendance la ON la.worker_id = w.id AND la.project_id = :pid2
+             WHERE w.is_deleted = 0
+             GROUP BY w.id, w.full_name, w.category, wp.is_active
+             ORDER BY w.full_name'
+        );
+        $stmt->execute(['pid' => $projectId, 'pid2' => $projectId]);
+        $roster = $stmt->fetchAll();
 
         $stmt = $pdo->prepare('SELECT worker_id, status FROM labour_attendance WHERE project_id = :pid AND attendance_date = :date');
         $stmt->execute(['pid' => $projectId, 'date' => $date]);

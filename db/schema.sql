@@ -49,8 +49,24 @@ CREATE TABLE IF NOT EXISTS workers (
     daily_wage DECIMAL(10,2),
     phone      VARCHAR(20),
     is_active  TINYINT(1)   NOT NULL DEFAULT 1,
+    is_deleted TINYINT(1)   NOT NULL DEFAULT 0, -- soft-delete: removed from the roster but
+                                                  -- attendance history (worker_id FK) stays intact
     created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Which projects a worker's roster entry belongs to (many-to-many — a
+-- laborer can work across several projects). is_active hides a worker
+-- from a single project's attendance-marking list without affecting
+-- their standing on any other project they're assigned to.
+CREATE TABLE IF NOT EXISTS worker_projects (
+    worker_id   INT         NOT NULL,
+    project_id  VARCHAR(64) COLLATE utf8mb4_general_ci NOT NULL,
+    is_active   TINYINT(1)  NOT NULL DEFAULT 1,
+    assigned_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (worker_id, project_id),
+    FOREIGN KEY (worker_id)  REFERENCES workers(id)  ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- One row per worker per project per day.
 CREATE TABLE IF NOT EXISTS labour_attendance (

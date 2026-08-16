@@ -12,18 +12,27 @@ $csrf = csrfToken();
 // clear message here instead of a raw PHP fatal error.
 $dbError = null;
 $workers = [];
+$projects = [];
 try {
     db()->query('SELECT 1');
-    // attendance_count is global (across every project, not just one) so
-    // deletion can be blocked if a worker has any history anywhere —
-    // mirrors materials.php's hide-vs-delete pattern.
+    ensureWorkersDeletedColumn();
+    ensureWorkerProjectsTable();
+    // attendance_count is global (across every project, not just one) —
+    // shown just for information now, since deleting a worker is a
+    // soft-delete that keeps their attendance history intact.
     $workers = db()->query(
-        'SELECT w.id, w.full_name, w.category, w.daily_wage, w.is_active, COUNT(la.id) AS attendance_count
+        "SELECT w.id, w.full_name, w.category, w.daily_wage, w.is_active, COUNT(DISTINCT la.id) AS attendance_count,
+                GROUP_CONCAT(DISTINCT p.title ORDER BY p.title SEPARATOR ', ') AS project_names,
+                GROUP_CONCAT(DISTINCT wp.project_id) AS project_ids
          FROM workers w
          LEFT JOIN labour_attendance la ON la.worker_id = w.id
+         LEFT JOIN worker_projects wp ON wp.worker_id = w.id
+         LEFT JOIN projects p ON p.id = wp.project_id
+         WHERE w.is_deleted = 0
          GROUP BY w.id, w.full_name, w.category, w.daily_wage, w.is_active
-         ORDER BY w.full_name'
+         ORDER BY w.full_name"
     )->fetchAll();
+    $projects = db()->query('SELECT id, title FROM projects ORDER BY title')->fetchAll();
 } catch (Throwable $e) {
     $dbError = $e->getMessage();
 }
@@ -94,6 +103,18 @@ try {
       </div>
       <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add</button>
     </form>
+    <?php if (!empty($projects)): ?>
+    <div class="form-group" style="margin-top:12px">
+      <label>Assign to project(s) <small style="font-weight:400;color:var(--muted)">— a worker only appears in a project's attendance roster once assigned</small></label>
+      <div id="new-worker-projects" style="display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px">
+        <?php foreach ($projects as $p): ?>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px">
+          <input type="checkbox" value="<?= htmlspecialchars($p['id']) ?>"> <?= htmlspecialchars($p['title']) ?>
+        </label>
+        <?php endforeach ?>
+      </div>
+    </div>
+    <?php endif ?>
   </div>
 
   <div class="card">
@@ -106,9 +127,10 @@ try {
     </div>
     <?php else: ?>
     <div class="materials-table-wrap">
-      <div class="materials-table">
+      <div class="materials-table" style="grid-template-columns:2fr 1.6fr 90px 90px 130px">
         <div class="materials-table-head">
           <span>Worker</span>
+          <span>Projects</span>
           <span>Daily Wage</span>
           <span>Status</span>
           <span></span>
@@ -119,6 +141,7 @@ try {
             <span class="mt-name"><?= htmlspecialchars($w['full_name']) ?></span>
             <span class="mt-unit"><?= htmlspecialchars($w['category'] ?: '—') ?><?php if ($w['attendance_count'] > 0): ?> · <?= $w['attendance_count'] ?> attendance record<?= $w['attendance_count'] == 1 ? '' : 's' ?><?php endif ?></span>
           </span>
+          <span id="projects-<?= $w['id'] ?>" style="<?= $w['project_names'] ? '' : 'color:var(--warn)' ?>"><?= htmlspecialchars($w['project_names'] ?: 'None — won\'t appear in any roster') ?></span>
           <span><?= $w['daily_wage'] !== null ? 'Rs. ' . htmlspecialchars($w['daily_wage']) : '—' ?></span>
           <span>
             <span class="toggle-status <?= $w['is_active'] ? 'published' : 'draft' ?>" id="status-<?= $w['id'] ?>">
@@ -126,20 +149,18 @@ try {
             </span>
           </span>
           <span class="mt-actions">
+            <button class="btn btn-ghost btn-sm" title="Edit assigned projects"
+                    onclick="openProjectsEditor(<?= $w['id'] ?>, <?= json_encode($w['full_name']) ?>, <?= json_encode($w['project_ids'] ? explode(',', $w['project_ids']) : []) ?>)">
+              <i class="fa-solid fa-diagram-project"></i>
+            </button>
             <button class="btn btn-ghost btn-sm" title="<?= $w['is_active'] ? 'Hide from attendance list' : 'Unhide' ?>" onclick="toggleWorker(<?= $w['id'] ?>, this)">
               <i class="fa-solid fa-eye<?= $w['is_active'] ? '-slash' : '' ?>"></i>
             </button>
-            <?php if ($w['attendance_count'] > 0): ?>
-            <button class="btn btn-ghost btn-sm" disabled title="<?= $w['attendance_count'] ?> attendance record<?= $w['attendance_count'] == 1 ? '' : 's' ?> logged — hide instead of deleting">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-            <?php else: ?>
             <button class="btn btn-ghost btn-sm mt-delete"
                     data-id="<?= $w['id'] ?>" data-name="<?= htmlspecialchars($w['full_name']) ?>"
                     title="Delete" onclick="confirmDeleteWorker(this.dataset.id, this.dataset.name)">
               <i class="fa-solid fa-trash"></i>
             </button>
-            <?php endif ?>
           </span>
         </div>
         <?php endforeach ?>
@@ -163,12 +184,34 @@ try {
   </div>
 </div>
 
+<div class="mask" id="projects-mask" style="display:none">
+  <div class="confirm-box">
+    <h3 id="projects-editor-title">Assigned Projects</h3>
+    <div id="projects-editor-list" style="display:flex;flex-direction:column;gap:8px;margin:12px 0;text-align:left"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeProjectsEditor()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="projects-editor-save">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const CSRF = <?= json_encode($csrf) ?>;
+const ALL_PROJECTS = <?= json_encode(array_map(fn($p) => ['id' => $p['id'], 'title' => $p['title']], $projects)) ?>;
 
 async function post(data) {
   const body = new URLSearchParams({ ...data, csrf_token: CSRF });
   const res  = await fetch('api.php', { method: 'POST', body });
+  return res.json();
+}
+
+// URLSearchParams can't build repeated project_ids[] keys from a plain
+// object (it stringifies arrays as "a,b" instead), so this appends them
+// as separate entries the way PHP expects for an array field.
+async function postWithProjectIds(data, projectIds) {
+  const body = new URLSearchParams({ ...data, csrf_token: CSRF });
+  for (const pid of projectIds) body.append('project_ids[]', pid);
+  const res = await fetch('api.php', { method: 'POST', body });
   return res.json();
 }
 
@@ -179,7 +222,8 @@ async function addWorker(e) {
   const daily_wage = document.getElementById('new-worker-wage').value.trim();
   if (!full_name) { toast('Enter a worker name.', 'err'); return false; }
 
-  const r = await post({ action: 'add_worker', full_name, category, daily_wage });
+  const projectIds = [...document.querySelectorAll('#new-worker-projects input[type=checkbox]:checked')].map(el => el.value);
+  const r = await postWithProjectIds({ action: 'add_worker', full_name, category, daily_wage }, projectIds);
   if (r.success) {
     toast('Worker added.', 'ok');
     setTimeout(() => location.reload(), 500);
@@ -188,6 +232,35 @@ async function addWorker(e) {
   }
   return false;
 }
+
+let _editingWorkerId = null;
+function openProjectsEditor(id, name, currentProjectIds) {
+  _editingWorkerId = id;
+  document.getElementById('projects-editor-title').textContent = `Assigned Projects — ${name}`;
+  const list = document.getElementById('projects-editor-list');
+  list.innerHTML = ALL_PROJECTS.map(p => `
+    <label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px">
+      <input type="checkbox" value="${p.id}" ${currentProjectIds.includes(p.id) ? 'checked' : ''}> ${p.title.replace(/</g, '&lt;')}
+    </label>
+  `).join('');
+  document.getElementById('projects-mask').style.display = 'flex';
+}
+function closeProjectsEditor() {
+  document.getElementById('projects-mask').style.display = 'none';
+  _editingWorkerId = null;
+}
+document.getElementById('projects-editor-save').onclick = async () => {
+  if (_editingWorkerId === null) return;
+  const projectIds = [...document.querySelectorAll('#projects-editor-list input[type=checkbox]:checked')].map(el => el.value);
+  const r = await postWithProjectIds({ action: 'set_worker_projects', worker_id: _editingWorkerId }, projectIds);
+  if (r.success) {
+    toast('Project assignments updated.', 'ok');
+    setTimeout(() => location.reload(), 400);
+  } else {
+    toast(r.error || 'Failed to update.', 'err');
+  }
+  closeProjectsEditor();
+};
 
 async function toggleWorker(id, btn) {
   btn.disabled = true;
@@ -208,7 +281,7 @@ async function toggleWorker(id, btn) {
 
 let _delCb = null;
 function confirmDeleteWorker(id, name) {
-  document.getElementById('confirm-msg').textContent = `Delete "${name}"? This cannot be undone.`;
+  document.getElementById('confirm-msg').textContent = `Remove "${name}" from the roster? Their attendance history will be kept.`;
   document.getElementById('mask').style.display = 'flex';
   _delCb = () => doDeleteWorker(id);
 }

@@ -15,20 +15,47 @@ $date = trim($_GET['date'] ?? '');
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) $date = date('Y-m-d');
 
 $csrf = siteCsrfToken();
+ensureWorkersDeletedColumn();
+ensureWorkerProjectsTable();
 
-// Active worker roster (for marking today's attendance)
-$workers = db()->query('SELECT id, full_name, category FROM workers WHERE is_active = TRUE ORDER BY full_name')->fetchAll();
-
-// Full roster incl. hidden workers, with a global attendance count (across
-// all projects, not just this one) so deletion can be blocked if a worker
-// has any history — mirrors admin/materials.php's hide-vs-delete pattern.
-$allWorkers = db()->query(
-    'SELECT w.id, w.full_name, w.category, w.is_active, COUNT(la.id) AS attendance_count
+// Active worker roster for THIS project only (for marking today's attendance)
+$stmt = db()->prepare(
+    'SELECT w.id, w.full_name, w.category
      FROM workers w
-     LEFT JOIN labour_attendance la ON la.worker_id = w.id
-     GROUP BY w.id, w.full_name, w.category, w.is_active
+     JOIN worker_projects wp ON wp.worker_id = w.id AND wp.project_id = :pid
+     WHERE w.is_deleted = 0 AND wp.is_active = 1
      ORDER BY w.full_name'
-)->fetchAll();
+);
+$stmt->execute(['pid' => $projectId]);
+$workers = $stmt->fetchAll();
+
+// Full roster for THIS project incl. hidden workers, with this project's
+// attendance count — deleting a worker here only unassigns them from this
+// project (their global identity, other project assignments, and every
+// attendance record everywhere stay untouched).
+$stmt = db()->prepare(
+    'SELECT w.id, w.full_name, w.category, wp.is_active, COUNT(la.id) AS attendance_count
+     FROM workers w
+     JOIN worker_projects wp ON wp.worker_id = w.id AND wp.project_id = :pid
+     LEFT JOIN labour_attendance la ON la.worker_id = w.id AND la.project_id = :pid2
+     WHERE w.is_deleted = 0
+     GROUP BY w.id, w.full_name, w.category, wp.is_active
+     ORDER BY w.full_name'
+);
+$stmt->execute(['pid' => $projectId, 'pid2' => $projectId]);
+$allWorkers = $stmt->fetchAll();
+
+// Workers already active on other projects but not this one, for the
+// "Add Existing Worker" picker.
+$stmt = db()->prepare(
+    'SELECT w.id, w.full_name, w.category
+     FROM workers w
+     WHERE w.is_deleted = 0
+       AND w.id NOT IN (SELECT worker_id FROM worker_projects WHERE project_id = :pid)
+     ORDER BY w.full_name'
+);
+$stmt->execute(['pid' => $projectId]);
+$unassignedWorkers = $stmt->fetchAll();
 
 // Existing statuses for this project + date
 $stmt = db()->prepare('SELECT worker_id, status FROM labour_attendance WHERE project_id = :pid AND attendance_date = :date');
@@ -195,6 +222,21 @@ usort($byWorker, fn($a, $b) => strcasecmp($a['full_name'], $b['full_name']));
         <button type="submit" class="btn btn-ghost"><i class="fa-solid fa-plus"></i> Add</button>
       </form>
 
+      <?php if (!empty($unassignedWorkers)): ?>
+      <div class="inline-add-form" style="margin-top:10px">
+        <div class="form-group" style="flex:1">
+          <label>Or add an existing worker from another project</label>
+          <select id="existing-worker-select">
+            <option value="">— Choose a worker —</option>
+            <?php foreach ($unassignedWorkers as $w): ?>
+            <option value="<?= $w['id'] ?>"><?= htmlspecialchars($w['full_name']) ?><?= $w['category'] ? ' (' . htmlspecialchars($w['category']) . ')' : '' ?></option>
+            <?php endforeach ?>
+          </select>
+        </div>
+        <button type="button" class="btn btn-ghost" onclick="addExistingWorker()"><i class="fa-solid fa-plus"></i> Add</button>
+      </div>
+      <?php endif ?>
+
       <?php if (!empty($allWorkers)): ?>
       <div id="roster-list" class="roster-list">
         <?php foreach ($allWorkers as $w): ?>
@@ -210,15 +252,9 @@ usort($byWorker, fn($a, $b) => strcasecmp($a['full_name'], $b['full_name']));
             <button class="btn btn-ghost btn-sm" title="<?= $w['is_active'] ? 'Hide from attendance list' : 'Unhide' ?>" onclick="toggleWorkerActive(<?= $w['id'] ?>, this)">
               <i class="fa-solid fa-eye<?= $w['is_active'] ? '-slash' : '' ?>"></i>
             </button>
-            <?php if ($w['attendance_count'] > 0): ?>
-            <button class="btn btn-ghost btn-sm" disabled title="<?= $w['attendance_count'] ?> attendance record<?= $w['attendance_count'] == 1 ? '' : 's' ?> logged — hide instead of deleting">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-            <?php else: ?>
             <button class="btn btn-ghost btn-sm" title="Delete" onclick="confirmDeleteWorker(<?= $w['id'] ?>, <?= json_encode($w['full_name']) ?>)">
               <i class="fa-solid fa-trash"></i>
             </button>
-            <?php endif ?>
           </div>
         </div>
         <?php endforeach ?>
@@ -368,7 +404,7 @@ async function addWorker(e) {
   const daily_wage = document.getElementById('new-worker-wage').value.trim();
   if (!full_name) { toast('Enter a worker name.', 'err'); return false; }
 
-  const r = await post({ action: 'add_worker', full_name, category, daily_wage });
+  const r = await post({ action: 'add_worker', project_id: PROJECT, full_name, category, daily_wage });
   if (r.success) {
     toast('Worker added.', 'ok');
     setTimeout(() => location.reload(), 500);
@@ -378,9 +414,23 @@ async function addWorker(e) {
   return false;
 }
 
+async function addExistingWorker() {
+  const sel = document.getElementById('existing-worker-select');
+  const workerId = sel.value;
+  if (!workerId) { toast('Choose a worker to add.', 'err'); return; }
+
+  const r = await post({ action: 'assign_worker', project_id: PROJECT, worker_id: workerId });
+  if (r.success) {
+    toast('Worker added to this project.', 'ok');
+    setTimeout(() => location.reload(), 500);
+  } else {
+    toast(r.error || 'Failed to add worker.', 'err');
+  }
+}
+
 async function toggleWorkerActive(id, btn) {
   btn.disabled = true;
-  const r = await post({ action: 'toggle_worker_active', worker_id: id });
+  const r = await post({ action: 'toggle_worker_active', project_id: PROJECT, worker_id: id });
   btn.disabled = false;
   if (r.success) {
     btn.innerHTML = `<i class="fa-solid fa-eye${r.is_active ? '-slash' : ''}"></i>`;
@@ -395,7 +445,7 @@ async function toggleWorkerActive(id, btn) {
 
 let _delWorkerCb = null;
 function confirmDeleteWorker(id, name) {
-  document.getElementById('worker-delete-msg').textContent = `Delete "${name}"? This cannot be undone.`;
+  document.getElementById('worker-delete-msg').textContent = `Remove "${name}" from the roster? Their attendance history will be kept.`;
   document.getElementById('worker-delete-mask').style.display = 'flex';
   _delWorkerCb = () => doDeleteWorker(id);
 }
@@ -406,7 +456,7 @@ function closeWorkerDeleteMask() {
 }
 async function doDeleteWorker(id) {
   closeWorkerDeleteMask();
-  const r = await post({ action: 'delete_worker', worker_id: id });
+  const r = await post({ action: 'delete_worker', project_id: PROJECT, worker_id: id });
   if (r.success) {
     toast('Worker deleted.', 'ok');
     setTimeout(() => location.reload(), 500);
