@@ -48,8 +48,11 @@ $projects = getAssignedProjects(currentSiteUserId());
   </div>
   <?php else: ?>
   <div class="site-projects-grid">
-    <?php foreach ($projects as $p): ?>
+    <?php foreach ($projects as $p):
+      $imgSrc = !empty($p['image']) ? '../' . htmlspecialchars($p['image']) : '../assets/favicon.png';
+    ?>
     <div class="card site-project-card">
+      <img class="site-project-card-img" src="<?= $imgSrc ?>" alt="" onerror="this.src='../assets/favicon.png'">
       <h3><?= htmlspecialchars($p['title']) ?></h3>
       <div class="site-project-actions">
         <a href="attendance.php?project=<?= urlencode($p['id']) ?>" class="btn btn-primary btn-sm">

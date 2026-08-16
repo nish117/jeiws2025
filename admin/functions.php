@@ -290,17 +290,43 @@ function processImage(string $tmpPath, string $dest, string $mime): bool {
 
 // ── MySQL project mirror (best-effort; JSON stays source of truth) ──
 // The site/ portal (labour attendance & materials stock) foreign-keys
-// against a lightweight projects(id, title) table so it doesn't need
+// against a lightweight projects(id, title, image) table so it doesn't need
 // to read/parse projects.json. Keep it in sync on every save/delete.
-function syncProjectToDb(string $id, string $title, bool $active = true): void {
+//
+// $image must always be passed explicitly (not left to default) — every
+// call site should read the project's *current* image value from its
+// projects.json record first, otherwise this would blank out the image
+// on every unrelated field edit (e.g. a title-only save).
+function syncProjectToDb(string $id, string $title, bool $active, string $image): void {
     try {
+        ensureProjectsImageColumn();
         db()->prepare(
-            'INSERT INTO projects (id, title, is_active, updated_at)
-             VALUES (:id, :title, :active, NOW())
-             ON DUPLICATE KEY UPDATE title = VALUES(title), is_active = VALUES(is_active), updated_at = NOW()'
-        )->execute(['id' => $id, 'title' => $title, 'active' => $active ? 1 : 0]);
+            'INSERT INTO projects (id, title, is_active, image, updated_at)
+             VALUES (:id, :title, :active, :image, NOW())
+             ON DUPLICATE KEY UPDATE title = VALUES(title), is_active = VALUES(is_active), image = VALUES(image), updated_at = NOW()'
+        )->execute(['id' => $id, 'title' => $title, 'active' => $active ? 1 : 0, 'image' => $image]);
     } catch (Throwable $e) {
         error_log('syncProjectToDb failed: ' . $e->getMessage());
+    }
+}
+
+// Convenience wrapper — syncs straight from a projects.json record shape
+// so call sites don't have to pick fields apart by hand.
+function syncProjectFromArray(array $p): void {
+    syncProjectToDb((string)$p['id'], (string)$p['title'], empty($p['is_draft']), (string)($p['image'] ?? ''));
+}
+
+function ensureProjectsImageColumn(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    $pdo = db();
+    $exists = (bool)$pdo->query(
+        "SELECT COUNT(*) FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'projects' AND COLUMN_NAME = 'image'"
+    )->fetchColumn();
+    if (!$exists) {
+        $pdo->exec("ALTER TABLE projects ADD COLUMN image VARCHAR(255) NOT NULL DEFAULT ''");
     }
 }
 

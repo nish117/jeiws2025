@@ -67,8 +67,9 @@ function ensureWorkerProjectsTable(): void {
 // state, which is unrelated to whether site staff should be able to
 // log attendance/stock against the project (drafts still need it).
 function getAssignedProjects(int $userId): array {
+    ensureProjectsImageColumn();
     $stmt = db()->prepare(
-        'SELECT p.id, p.title
+        'SELECT p.id, p.title, p.image
          FROM projects p
          JOIN user_projects up ON up.project_id = p.id
          WHERE up.user_id = :uid
@@ -76,6 +77,24 @@ function getAssignedProjects(int $userId): array {
     );
     $stmt->execute(['uid' => $userId]);
     return $stmt->fetchAll();
+}
+
+// The image column is populated by the admin CMS (admin/functions.php's
+// syncProjectFromArray) — this mirrors that same self-migration on the
+// read side, since deployment order between admin/ and site/ isn't
+// guaranteed and this table can't be altered directly on the live server.
+function ensureProjectsImageColumn(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    $pdo = db();
+    $exists = (bool)$pdo->query(
+        "SELECT COUNT(*) FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'projects' AND COLUMN_NAME = 'image'"
+    )->fetchColumn();
+    if (!$exists) {
+        $pdo->exec("ALTER TABLE projects ADD COLUMN image VARCHAR(255) NOT NULL DEFAULT ''");
+    }
 }
 
 // True if the user is assigned to this project — call before any

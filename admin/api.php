@@ -39,14 +39,16 @@ switch ($action) {
             $dir = IMG_BASE . '/' . $id;
             if (!is_dir($dir)) mkdir($dir, 0755, true);
             $projects[] = ['id' => $id, 'title' => $title, 'description' => $desc, 'image' => '', 'gallery' => [], 'is_draft' => $isDraft];
+            $image = '';
         } else {
             $projects[$idx]['title']       = $title;
             $projects[$idx]['description'] = $desc;
             $projects[$idx]['is_draft']    = $isDraft;
+            $image = $projects[$idx]['image'] ?? '';
         }
 
         saveProjects($projects);
-        syncProjectToDb($id, $title, !$isDraft);
+        syncProjectToDb($id, $title, !$isDraft, $image);
         echo json_encode(['success' => true, 'project_id' => $id]);
         break;
     }
@@ -89,6 +91,7 @@ switch ($action) {
         if ($isFirst) $projects[$idx]['image'] = $urlPath;
 
         saveProjects($projects);
+        if ($isFirst) { syncProjectFromArray($projects[$idx]); }
         $savedKb = round(filesize($dest) / 1024);
         echo json_encode(['success' => true, 'path' => $urlPath, 'is_first_image' => $isFirst, 'saved_kb' => $savedKb]);
         break;
@@ -122,6 +125,7 @@ switch ($action) {
         }
 
         saveProjects($projects);
+        syncProjectFromArray($projects[$idx]);
         echo json_encode(['success' => true]);
         break;
     }
@@ -144,6 +148,7 @@ switch ($action) {
 
         $projects[$idx]['image'] = $photo;
         saveProjects($projects);
+        syncProjectFromArray($projects[$idx]);
         echo json_encode(['success' => true]);
         break;
     }

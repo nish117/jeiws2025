@@ -20,14 +20,16 @@ CREATE TABLE IF NOT EXISTS site_users (
     updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Mirror of data/projects.json (id + title only). The CMS remains the
--- source of truth for project content; admin/functions.php keeps this
--- table in sync on save/delete so it can be used as a foreign key
--- anchor here without duplicating gallery/description data.
+-- Mirror of data/projects.json (id + title + main image path only). The
+-- CMS remains the source of truth for project content;
+-- admin/functions.php keeps this table in sync on save/delete so it can
+-- be used as a foreign key anchor here without duplicating the full
+-- gallery/description data.
 CREATE TABLE IF NOT EXISTS projects (
     id         VARCHAR(64)  PRIMARY KEY,
     title      VARCHAR(255) NOT NULL,
     is_active  TINYINT(1)   NOT NULL DEFAULT 1,
+    image      VARCHAR(255) NOT NULL DEFAULT '', -- e.g. "assets/project-images/<id>/<file>.jpg"
     updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

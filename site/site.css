@@ -5,6 +5,7 @@
 
 /* ── Project picker (dashboard) ──────────────────────── */
 .site-projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.site-project-card-img{width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:14px;background:var(--bg)}
 .site-project-card h3{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:14px}
 .site-project-actions{display:flex;gap:8px;flex-wrap:wrap}
 
