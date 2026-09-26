@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+
+    <!-- ── Primary SEO ─────────────────────────────────────────── -->
+    <title>Nepal Naapi Naksa Plot Area Calculator & Boundary Analyzer | JEIWS</title>
+    <meta name="description" content="Upload a Nepal cadastral map (Naapi Naksa), calibrate its scale, trace the plot boundary, and calculate real land area in Ropani-Aana-Paisa-Daam, Bigha-Kattha-Dhur, sq.ft and sq.m — free online tool for landowners, engineers and surveyors.">
+    <meta name="keywords" content="naapi naksa area calculator, kitta plot area calculator, Nepal cadastral map area, land boundary analyzer Nepal, ropani aana paisa daam calculator, survey map area tool Nepal">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="J.E. Infrastructure Waterproofing And Services Pvt. Ltd.">
+    <link rel="canonical" href="https://jeiws.com/naksa-analyzer.html">
+
+    <!-- ── Open Graph ──────────────────────────────────────────── -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="JEIWS">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:url" content="https://jeiws.com/naksa-analyzer.html">
+    <meta property="og:title" content="Nepal Naapi Naksa Plot Area Calculator & Boundary Analyzer | JEIWS">
+    <meta property="og:description" content="Upload a Nepal cadastral map, calibrate its scale, trace the plot boundary, and get real land area in every Nepali unit — Ropani, Aana, Bigha, Kattha and more.">
+    <meta property="og:image" content="https://jeiws.com/assets/logo.png">
+    <meta property="og:image:alt" content="Nepal Naapi Naksa Plot Area Calculator by JEIWS">
+
+    <!-- ── Twitter Card ────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Nepal Naapi Naksa Plot Area Calculator | JEIWS">
+    <meta name="twitter:description" content="Upload a Naapi Naksa, calibrate scale, trace the boundary, and calculate land area in every Nepali unit — free online tool.">
+    <meta name="twitter:image" content="https://jeiws.com/assets/logo.png">
+
+    <!-- ── Favicon ─────────────────────────────────────────────── -->
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <!-- ── Preconnect ──────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
+    <!-- ── Stylesheets ─────────────────────────────────────────── -->
+    <link rel="stylesheet" href="css/styles.css?v=9">
+    <link rel="stylesheet" href="css/naksa-analyzer.css?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- ── JSON-LD Structured Data ─────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Nepal Naapi Naksa Plot Area Calculator & Boundary Analyzer",
+      "url": "https://jeiws.com/naksa-analyzer.html",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any (Web Browser)",
+      "description": "Upload a Nepal cadastral map (Naapi Naksa), calibrate its scale, trace the plot boundary, and calculate real land area in Ropani-Aana-Paisa-Daam, Bigha-Kattha-Dhur, square feet and square metres.",
+      "isPartOf": { "@id": "https://jeiws.com/#website" },
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://jeiws.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Naksa Plot Analyzer", "item": "https://jeiws.com/naksa-analyzer.html" }
+        ]
+      }
+    }
+    </script>
+
+    <!-- Fabric.js — loaded eagerly (classic script, global `fabric`) since the
+         canvas workspace needs it immediately on page load. Pinned to 5.3.0:
+         cdnjs no longer ships a classic-script build at "latest" (6.x is ESM-only). -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+</head>
+<body>
+    <div id="preloader"></div>
+    <div id="header"></div>
+
+    <main class="naksa-app" id="naksaApp" data-mobile-view="map">
+
+        <!-- ══════════════════ PAGE TITLE / TOOLBAR ══════════════════ -->
+        <div class="naksa-topbar">
+            <div class="naksa-topbar-title">
+                <span class="section-eyebrow-inline">UTILITY TOOL</span>
+                <h1>Nepal Naapi Naksa Plot Area Calculator &amp; Boundary Analyzer</h1>
+            </div>
+            <button type="button" class="naksa-help-btn" id="naksaHelpBtn"><i class="fas fa-circle-question"></i> How to use</button>
+        </div>
+
+        <!-- ══════════════════ LEFT PANEL — TOOLS ══════════════════ -->
+        <aside class="naksa-panel naksa-panel-left" id="naksaLeftPanel">
+
+            <!-- Upload -->
+            <section class="naksa-tool-section" id="naksaUploadSection">
+                <button type="button" class="naksa-section-header"><h3><i class="fas fa-upload"></i> Upload Naapi Naksa</h3><i class="fas fa-chevron-down naksa-section-chevron"></i></button>
+                <div class="naksa-section-body">
+                <div class="naksa-dropzone" id="naksaDropZone" tabindex="0" role="button" aria-label="Upload map image">
+                    <i class="fas fa-cloud-arrow-up"></i>
+                    <p>Drag &amp; drop your map here, or <span>browse files</span></p>
+                    <span class="naksa-dropzone-hint">JPG, PNG or WEBP — up to 30MB</span>
+                </div>
+                <input type="file" id="naksaFileInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" hidden>
+                <div class="naksa-file-preview" id="naksaFilePreviewWrap" hidden>
+                    <img id="naksaFilePreviewImg" alt="Uploaded map preview">
+                    <div class="naksa-file-preview-info">
+                        <span id="naksaFilePreviewName"></span>
+                        <button type="button" id="naksaRemoveFileBtn" class="naksa-btn-text-danger"><i class="fas fa-trash"></i> Remove</button>
+                    </div>
+                </div>
+                <p class="naksa-upload-error" id="naksaUploadError" hidden></p>
+                <p class="naksa-disclaimer"><i class="fas fa-circle-info"></i> Area calculation is an approximate digital measurement and should not replace an official land survey or government cadastral record.</p>
+                </div>
+            </section>
+
+            <!-- Calibration -->
+            <section class="naksa-tool-section" id="naksaCalibrationSection" hidden>
+                <button type="button" class="naksa-section-header"><h3><i class="fas fa-ruler"></i> Calibrate Scale</h3><i class="fas fa-chevron-down naksa-section-chevron"></i></button>
+                <div class="naksa-section-body">
+                <span class="naksa-calib-badge not-calibrated" id="naksaCalibrationStatus">Not calibrated</span>
+                <p class="naksa-hint"><strong>1.</strong> Enter a real-world distance you know. <strong>2.</strong> Click its two endpoints on the map.</p>
+                <div class="naksa-unit-toggle" id="naksaCalibUnitToggle">
+                    <button type="button" class="naksa-unit-toggle-btn" data-unit="ft-in">ft-in</button>
+                    <button type="button" class="naksa-unit-toggle-btn active" data-unit="m">m</button>
+                    <button type="button" class="naksa-unit-toggle-btn" data-unit="ft">ft</button>
+                    <button type="button" class="naksa-unit-toggle-btn" data-unit="cm">cm</button>
+                </div>
+                <label class="naksa-field-label" id="naksaCalibDistanceLabel">
+                    <span id="naksaCalibDistanceLabelText">Known real-world distance (m)</span>
+                    <input type="number" id="naksaCalibDistanceInput" min="0" step="0.01" placeholder="e.g. 25">
+                </label>
+                <div class="naksa-feet-inches-row" id="naksaCalibFeetInchesRow" hidden>
+                    <input type="number" id="naksaCalibFeetInput" min="0" step="1" placeholder="Feet">
+                    <input type="number" id="naksaCalibInchesInput" min="0" max="11.9" step="0.1" placeholder="Inches">
+                </div>
+                <button type="button" class="naksa-btn" id="naksaCalibPickBtn">Pick 2 points on map</button>
+                <p class="naksa-status-text" id="naksaCalibStatus"></p>
+                </div>
+            </section>
+
+            <!-- Tools -->
+            <section class="naksa-tool-section" id="naksaToolsSection" hidden>
+                <button type="button" class="naksa-section-header"><h3><i class="fas fa-draw-polygon"></i> Tools</h3><i class="fas fa-chevron-down naksa-section-chevron"></i></button>
+                <div class="naksa-section-body">
+                <label class="naksa-unit-toggle-label">Show lengths in</label>
+                <div class="naksa-unit-toggle" id="naksaLengthUnitToggle">
+                    <button type="button" class="naksa-unit-toggle-btn" data-unit="ft-in">ft-in</button>
+                    <button type="button" class="naksa-unit-toggle-btn active" data-unit="m">m</button>
+                    <button type="button" class="naksa-unit-toggle-btn" data-unit="ft">ft</button>
+                    <button type="button" class="naksa-unit-toggle-btn" data-unit="cm">cm</button>
+                </div>
+                <div class="naksa-btn-row">
+                    <button type="button" class="naksa-btn" id="naksaNewPlotBtn"><i class="fas fa-plus"></i> Add Plot</button>
+                    <button type="button" class="naksa-btn naksa-btn-ghost" id="naksaFinishPlotBtn" hidden>Finish</button>
+                    <button type="button" class="naksa-btn naksa-btn-ghost" id="naksaCancelPlotBtn" hidden>Cancel</button>
+                    <button type="button" class="naksa-btn naksa-btn-ghost" id="naksaUndoPointBtn" hidden>Undo last point</button>
+                </div>
+                <p class="naksa-hint">Click around a plot's corners — every point can be dragged to fix it, even mid-shape. Click near your first point (or press Finish) to close it and see its area. Hover any closed plot on the map to see its area.</p>
+                <div class="naksa-btn-row">
+                    <button type="button" class="naksa-btn naksa-btn-ghost" id="naksaMeasureBtn"><i class="fas fa-ruler-horizontal"></i> Measure Distance</button>
+                </div>
+                <p class="naksa-status-text" id="naksaMeasureStatus"></p>
+                </div>
+            </section>
+
+            <!-- View controls -->
+            <section class="naksa-tool-section" id="naksaViewSection" data-default="collapsed" hidden>
+                <button type="button" class="naksa-section-header"><h3><i class="fas fa-magnifying-glass"></i> View</h3><i class="fas fa-chevron-down naksa-section-chevron"></i></button>
+                <div class="naksa-section-body">
+                <div class="naksa-toolgrid">
+                    <button type="button" id="naksaZoomInBtn" title="Zoom in"><i class="fas fa-magnifying-glass-plus"></i></button>
+                    <button type="button" id="naksaZoomOutBtn" title="Zoom out"><i class="fas fa-magnifying-glass-minus"></i></button>
+                    <button type="button" id="naksaFitBtn" title="Fit to screen"><i class="fas fa-expand"></i></button>
+                    <button type="button" id="naksaPanModeBtn" title="Pan mode"><i class="fas fa-hand"></i></button>
+                    <button type="button" id="naksaFullscreenBtn" title="Fullscreen"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
+                    <button type="button" id="naksaUndoBtn" title="Undo"><i class="fas fa-rotate-left"></i></button>
+                    <button type="button" id="naksaRedoBtn" title="Redo"><i class="fas fa-rotate-right"></i></button>
+                </div>
+                </div>
+            </section>
+        </aside>
+
+        <!-- ══════════════════ CENTER — CANVAS ══════════════════ -->
+        <div class="naksa-panel naksa-panel-center" id="naksaCenterPanel">
+            <div class="naksa-canvas-container" id="naksaCanvasContainer">
+                <canvas id="naksaCanvas"></canvas>
+                <div class="naksa-canvas-empty-state" id="naksaCanvasEmptyState">
+                    <i class="fas fa-map-location-dot"></i>
+                    <p>Upload a Naapi Naksa to begin</p>
+                </div>
+                <div class="naksa-coord-hud" id="naksaCoordHud" hidden></div>
+            </div>
+        </div>
+
+        <!-- ══════════════════ RIGHT PANEL — RESULTS ══════════════════ -->
+        <aside class="naksa-panel naksa-panel-right" id="naksaRightPanel">
+            <section class="naksa-tool-section">
+                <h3><i class="fas fa-shapes"></i> Plots</h3>
+                <ul class="naksa-item-list" id="naksaPlotList"></ul>
+            </section>
+
+            <section class="naksa-tool-section">
+                <h3><i class="fas fa-chart-area"></i> Selected Plot Area</h3>
+                <div id="naksaAreaResults"><p class="naksa-empty-note">Add and close a plot to see its area.</p></div>
+            </section>
+        </aside>
+
+        <!-- ══════════════════ MOBILE BOTTOM TOOLBAR ══════════════════ -->
+        <nav class="naksa-mobile-toolbar">
+            <button type="button" data-mobile-tab="tools"><i class="fas fa-sliders"></i> Tools</button>
+            <button type="button" data-mobile-tab="map" class="active"><i class="fas fa-map"></i> Map</button>
+            <button type="button" data-mobile-tab="results"><i class="fas fa-chart-area"></i> Results</button>
+        </nav>
+    </main>
+
+    <!-- Help modal (reuses the site's existing .app-modal-overlay/.app-modal component) -->
+    <div class="app-modal-overlay" id="naksaHelpModal">
+        <div class="app-modal">
+            <button type="button" class="app-modal-close" id="naksaHelpCloseBtn">&times;</button>
+            <div class="app-modal-header">
+                <h2>How to use the <span>Naksa Plot Analyzer</span></h2>
+                <p>Four steps from upload to area.</p>
+            </div>
+            <div class="app-modal-body naksa-help-body">
+                <ol>
+                    <li><strong>Upload Naapi Naksa</strong> — drag in a scanned/photographed cadastral map image (JPG, PNG or WEBP).</li>
+                    <li><strong>Calibrate Scale</strong> — enter a real-world distance you know, then click its two endpoints on the map.</li>
+                    <li><strong>Add Plot</strong> — click around a plot's corners. Every point can be dragged to fix it. Click near your first point (or press Finish) to close the shape and see its area — in sq.ft, sq.m, and Ropani/Aana/Bigha/Kattha. Hover any closed plot to see its area without selecting it.</li>
+                    <li><strong>Measure Distance</strong> — a separate tool for checking the distance between any two points, without adding them to a plot.</li>
+                </ol>
+                <p class="naksa-disclaimer"><i class="fas fa-circle-info"></i> This tool gives an approximate digital measurement — it is not a substitute for an official government land survey.</p>
+            </div>
+        </div>
+    </div>
+
+    <button id="goToTop" class="go-to-top">↑</button>
+    <div id="footer"></div>
+
+    <script type="module" src="src/js/script.js?v=7"></script>
+    <script src="src/js/analytics.js"></script>
+    <script type="module" src="src/js/naksa/naksa-main.js?v=2"></script>
+</body>
+</html>

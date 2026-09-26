@@ -1,6 +1,6 @@
 export function initializeFooter() {
     const footer = document.getElementById('footer');
-    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html') || window.location.pathname.includes('vacancies.html');
+    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html') || window.location.pathname.includes('vacancies.html') || window.location.pathname.includes('naksa-analyzer.html');
 
     footer.innerHTML = `
         <div class="footer-top-bar"></div>
@@ -32,6 +32,7 @@ export function initializeFooter() {
                         <li><a href="${isGalleryPage ? './#team' : '#team'}" class="footer-link">Our Team</a></li>
                         <li><a href="vacancies.html" class="footer-link">Careers</a></li>
                         <li><a href="area-converter.html" class="footer-link">Area Converter</a></li>
+                        <li><a href="naksa-analyzer.html" class="footer-link">Naksa Plot Analyzer</a></li>
                     </ul>
                 </div>
 

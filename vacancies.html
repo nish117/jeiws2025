@@ -218,6 +218,11 @@
                         <div class="file-error-msg" id="fileErrorMsg">Please upload your CV or Resume to continue.</div>
                     </div>
 
+                    <div class="form-group">
+                        <div class="g-recaptcha" data-sitekey="6LdzbcotAAAAAKOWS69WG8d8ecYqrMEJvexe3tfI" data-callback="onCaptchaSolved"></div>
+                        <div class="field-error-msg" id="captchaErrorMsg">Please confirm you're not a robot.</div>
+                    </div>
+
                     <button type="submit" class="app-submit-btn" id="submitBtn">
                         <i class="fas fa-paper-plane"></i> Submit Application
                     </button>
@@ -241,6 +246,7 @@
     <button id="goToTop" class="go-to-top"><i class="fas fa-arrow-up"></i></button>
     <div id="footer"></div>
 
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script type="module" src="src/js/script.js?v=7"></script>
     <script>
         function openApplicationModal(position) {
@@ -253,6 +259,10 @@
         function closeApplicationModal() {
             document.getElementById('applicationModal').classList.remove('open');
             document.body.style.overflow = '';
+        }
+
+        function onCaptchaSolved() {
+            document.getElementById('captchaErrorMsg').style.display = 'none';
         }
 
         function closeSuccessModal() {
@@ -325,6 +335,14 @@
             errorMsg.style.display = 'none';
             dropZone.classList.remove('error');
 
+            const captchaErrorMsg = document.getElementById('captchaErrorMsg');
+            if (typeof grecaptcha === 'undefined' || grecaptcha.getResponse().length === 0) {
+                captchaErrorMsg.style.display = 'block';
+                captchaErrorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            captchaErrorMsg.style.display = 'none';
+
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
@@ -341,12 +359,16 @@
                         document.getElementById('fileDropZone').classList.remove('error');
                         document.getElementById('emailErrorMsg').style.display = 'none';
                         appEmail.classList.remove('error');
+                    } else if (data.trim() === 'captcha_failed' || data.trim() === 'captcha_missing') {
+                        captchaErrorMsg.style.display = 'block';
+                        captchaErrorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     } else {
                         alert('Something went wrong. Please try again or call us directly.');
                     }
                 })
                 .catch(() => alert('Network error. Please try again.'))
                 .finally(() => {
+                    if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
                 });

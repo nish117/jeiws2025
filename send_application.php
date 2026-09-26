@@ -13,6 +13,8 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 define('JEIWS_CONFIG', 1);
 $cfg = require __DIR__ . '/config/mail.php';
+$recaptchaCfg = require __DIR__ . '/config/recaptcha.php';
+require_once __DIR__ . '/lib/Recaptcha.php';
 
 $logDir = __DIR__ . '/data/log';
 if (!is_dir($logDir)) { @mkdir($logDir, 0755, true); }
@@ -50,6 +52,18 @@ try {
     $experience = htmlspecialchars(trim($_POST["experience"]?? 'Not specified'));
     $education  = htmlspecialchars(trim($_POST["education"] ?? 'Not specified'));
     $message    = htmlspecialchars(trim($_POST["message"]   ?? ''));
+
+    $captchaResponse = $_POST['g-recaptcha-response'] ?? '';
+    if (!verifyRecaptcha($recaptchaCfg['secretKey'], $captchaResponse, $_SERVER['REMOTE_ADDR'] ?? '')) {
+        $logFile = $logDir . '/mail_errors.log';
+        $entry   = '[' . date('Y-m-d H:i:s') . '] '
+                 . 'Application reCAPTCHA verification failed | '
+                 . 'name=' . ($name !== '' ? $name : 'unknown') . ' '
+                 . '| IP: ' . ($_SERVER['REMOTE_ADDR'] ?? 'n/a') . PHP_EOL;
+        file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
+        echo $captchaResponse === '' ? 'captcha_missing' : 'captcha_failed';
+        exit;
+    }
 
     if (empty($name) || empty($email) || empty($phone) || empty($message) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $logFile = $logDir . '/mail_errors.log';

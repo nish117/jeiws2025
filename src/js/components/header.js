@@ -1,6 +1,6 @@
 export function initializeHeader() {
     const header = document.getElementById('header');
-    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html') || window.location.pathname.includes('vacancies.html');
+    const isGalleryPage = window.location.pathname.includes('gallery.html') || window.location.pathname.includes('area-converter.html') || window.location.pathname.includes('vacancies.html') || window.location.pathname.includes('naksa-analyzer.html');
 
     header.innerHTML = `
         <header class="site-header">
@@ -41,7 +41,17 @@ export function initializeHeader() {
                     <li><a href="${isGalleryPage ? './#projects' : '#projects'}" class="nav-link">Projects</a></li>
                     <li><a href="${isGalleryPage ? './#team' : '#team'}" class="nav-link">Team</a></li>
                     <li><a href="vacancies.html" class="nav-link"><i class="fas fa-briefcase"></i> Careers</a></li>
-                    <li><a href="area-converter.html" class="nav-link nav-link-tool"><i class="fas fa-ruler-combined"></i> Area Tool</a></li>
+                    <li class="dropdown nav-dropdown" id="nav-utilities-dropdown">
+                        <a href="javascript:void(0)" class="nav-link-tool nav-dropdown-toggle" id="nav-utilities-toggle">
+                            <i class="fas fa-toolbox"></i> Utilities <i class="fas fa-chevron-down dropdown-caret"></i>
+                        </a>
+                        <div class="dropdown-content">
+                            <div class="dropdown-content-inner">
+                                <a href="area-converter.html" class="nav-link"><i class="fas fa-ruler-combined"></i> Area Tool</a>
+                                <a href="naksa-analyzer.html" class="nav-link"><i class="fas fa-map-marked-alt"></i> Plot Calculator</a>
+                            </div>
+                        </div>
+                    </li>
                     <li><a href="${isGalleryPage ? './#contact' : '#contact'}" class="nav-link nav-link-cta">Contact</a></li>
                 </ul>
                 <div class="call-us">
@@ -77,4 +87,21 @@ export function initializeHeader() {
             }
         });
     });
+
+    // Utilities dropdown — hover already opens it on desktop via CSS, but
+    // touch devices don't trigger :hover, so a click toggle is needed too.
+    const utilitiesDropdown = header.querySelector('#nav-utilities-dropdown');
+    const utilitiesToggle = header.querySelector('#nav-utilities-toggle');
+    if (utilitiesDropdown && utilitiesToggle) {
+        utilitiesToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            utilitiesDropdown.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+            if (!utilitiesDropdown.contains(e.target)) {
+                utilitiesDropdown.classList.remove('open');
+            }
+        });
+    }
 }

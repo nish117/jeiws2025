@@ -410,11 +410,6 @@
                     <h3>Cindrella Shakya</h3>
                     <p>Architect</p>
                 </div>
-                <!-- <div class="team-member">
-                    <img src="assets/sajana.jpg" alt="Sajana Kc">
-                    <h3>Sajana Kc</h3>
-                    <p>Intern Civil Engineer</p>
-                </div> -->
                 <div class="team-member">
                     <img src="assets/sabina.jpg" alt="Sabina Karki">
                     <h3>Sabina Karki</h3>
@@ -424,6 +419,11 @@
                     <img src="assets/sabin.jpg" alt="Sabin Pandey">
                     <h3>Sabin Pandey</h3>
                     <p>Site Engineer</p>
+                </div>
+                 <div class="team-member">
+                    <img src="assets/binisha.jpg" alt="Binisha Manandhar">
+                    <h3>Binisha Manandhar</h3>
+                    <p>Intern Civil Engineer</p>
                 </div>
             </div>
         </section>
@@ -517,6 +517,8 @@
                             <input type="email" name="email" placeholder="Your Email Address" required>
                             <input type="tel" id="phone" name="phone" required pattern="[0-9]{10}" placeholder="10-digit Phone Number">
                             <textarea name="message" placeholder="Tell us about your project..." required></textarea>
+                            <div class="g-recaptcha" data-sitekey="6LdzbcotAAAAAKOWS69WG8d8ecYqrMEJvexe3tfI" data-callback="onContactCaptchaSolved" style="margin-bottom:12px;"></div>
+                            <div class="field-error-msg" id="contactCaptchaErrorMsg" style="margin-bottom:12px;">Please confirm you're not a robot.</div>
                             <button type="submit"><i class="fas fa-paper-plane"></i> Send Message</button>
                         </form>
                     </div>
@@ -540,6 +542,12 @@
     </main>
 
     <div id="footer"></div>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script>
+        function onContactCaptchaSolved() {
+            document.getElementById('contactCaptchaErrorMsg').style.display = 'none';
+        }
+    </script>
     <script type="module" src="src/js/script.js?v=7"></script>
     <script type="module" src="src/js/main.js?v=4"></script>
     <script src="src/js/functions.js?v=3"></script>

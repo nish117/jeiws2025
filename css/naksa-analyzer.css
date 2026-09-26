@@ -1,0 +1,264 @@
+/* ===========================================
+   NAKSA PLOT ANALYZER — APP LAYOUT
+   =========================================== */
+
+.naksa-app{
+  margin-top:var(--header-h);
+  padding:18px 18px 24px;
+  display:grid;
+  grid-template-columns:300px 1fr 320px;
+  grid-template-rows:auto 1fr;
+  grid-template-areas:"topbar topbar topbar" "left center right";
+  gap:16px;
+  min-height:calc(100vh - var(--header-h));
+  background:var(--bg-2);
+  box-sizing:border-box;
+}
+.naksa-app *{box-sizing:border-box}
+
+.naksa-topbar{
+  grid-area:topbar;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+.section-eyebrow-inline{
+  display:block;font-size:10.5px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--blue);margin-bottom:6px;font-family:'Plus Jakarta Sans',sans-serif;
+}
+.naksa-topbar-title h1{
+  font-family:'Sora',sans-serif;font-size:1.4rem;font-weight:800;color:var(--ink);
+  letter-spacing:-0.5px;margin:0;line-height:1.2;
+}
+.naksa-help-btn{
+  display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:100px;
+  background:var(--bg);border:1.5px solid var(--rule);color:var(--blue);
+  font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;
+  transition:var(--t);white-space:nowrap;
+}
+.naksa-help-btn:hover{background:var(--blue-pale);border-color:var(--blue)}
+
+/* ── Panels ──────────────────────────────── */
+.naksa-panel{background:var(--bg);border:1.5px solid var(--rule);border-radius:var(--rl);box-shadow:var(--s1)}
+.naksa-panel-left{grid-area:left;overflow-y:auto;max-height:calc(100vh - var(--header-h) - 42px);padding:6px}
+.naksa-panel-right{grid-area:right;overflow-y:auto;max-height:calc(100vh - var(--header-h) - 42px);padding:6px}
+.naksa-panel-center{grid-area:center;position:relative;overflow:hidden;padding:0;min-height:420px}
+
+.naksa-tool-section{padding:16px 14px;border-bottom:1px solid var(--rule)}
+.naksa-tool-section:last-child{border-bottom:none}
+.naksa-tool-section h3{
+  font-family:'Sora',sans-serif;font-size:12.5px;font-weight:700;color:var(--blue);
+  text-transform:uppercase;letter-spacing:0.8px;margin:0;display:flex;align-items:center;gap:8px;
+}
+.naksa-tool-section h3 i{font-size:12px}
+
+/* ── Collapsible section headers (left panel) ─────────────────────────
+   Only the .naksa-section-body is hidden when collapsed — the header
+   (with its chevron) stays visible and clickable so the section can be
+   reopened. Sections with no naksa-section-header (the right panel's
+   results sections) are unaffected and render exactly as before. */
+.naksa-section-header{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:none;border:none;padding:0;margin:0 0 12px;cursor:pointer;text-align:left;
+}
+.naksa-section-header h3{margin:0}
+.naksa-section-chevron{color:var(--muted);font-size:11px;transition:transform var(--t);flex-shrink:0}
+.naksa-tool-section.naksa-collapsed .naksa-section-header{margin-bottom:0}
+.naksa-tool-section.naksa-collapsed .naksa-section-chevron{transform:rotate(-90deg)}
+.naksa-tool-section.naksa-collapsed .naksa-section-body{display:none}
+
+/* ── Upload ──────────────────────────────── */
+.naksa-dropzone{
+  border:2px dashed rgba(27,103,153,0.35);border-radius:var(--r);padding:26px 14px;
+  text-align:center;cursor:pointer;transition:var(--t);background:var(--blue-pale);
+}
+.naksa-dropzone:hover,.naksa-dropzone.drag-active{border-color:var(--blue);background:rgba(27,103,153,0.14)}
+.naksa-dropzone i{font-size:26px;color:var(--blue);margin-bottom:8px;display:block}
+.naksa-dropzone p{margin:0 0 4px;font-size:13.5px;color:var(--text);font-weight:600}
+.naksa-dropzone p span{color:var(--blue);text-decoration:underline}
+.naksa-dropzone-hint{font-size:11px;color:var(--muted)}
+
+.naksa-file-preview{display:flex;gap:10px;align-items:center;margin-top:12px;padding:10px;background:var(--bg-2);border-radius:var(--r)}
+.naksa-file-preview[hidden]{display:none}
+.naksa-file-preview img{width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--rule)}
+.naksa-file-preview-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.naksa-file-preview-info span{font-size:11.5px;color:var(--text);word-break:break-word}
+
+.naksa-btn-text-danger{
+  background:none;border:none;color:#DC2626;font-size:11.5px;font-weight:700;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;padding:0;
+}
+.naksa-upload-error{color:#DC2626;font-size:12.5px;margin:8px 0 0;font-weight:600}
+.naksa-disclaimer{
+  font-size:11.5px;color:var(--muted);line-height:1.5;margin:12px 0 0;display:flex;gap:6px;
+  background:var(--bg-2);padding:10px 12px;border-radius:8px;
+}
+.naksa-disclaimer i{flex-shrink:0;margin-top:1.5px;color:var(--blue)}
+.naksa-hint{font-size:11.5px;color:var(--muted);line-height:1.5;margin:8px 0}
+
+/* ── Buttons / controls ──────────────────── */
+.naksa-btn-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.naksa-btn{
+  padding:9px 16px;border-radius:100px;border:none;background:var(--blue);color:#fff;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;
+  transition:var(--t);white-space:nowrap;
+}
+.naksa-btn:hover{background:var(--blue-dim)}
+.naksa-btn-ghost{background:transparent;color:var(--blue);border:1.5px solid rgba(27,103,153,0.3)}
+.naksa-btn-ghost:hover{background:var(--blue-pale)}
+.naksa-btn-ghost.active{background:var(--blue);color:#fff}
+.naksa-status-text{font-size:11.5px;color:var(--muted);margin:6px 0 0;min-height:14px}
+
+.naksa-toolgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.naksa-toolgrid button{
+  aspect-ratio:1;border-radius:10px;border:1.5px solid var(--rule);background:var(--bg-2);
+  color:var(--text);cursor:pointer;transition:var(--t);display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+.naksa-toolgrid button:hover,.naksa-toolgrid button.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+.naksa-field-label{display:flex;flex-direction:column;gap:5px;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px}
+.naksa-field-label[hidden]{display:none}
+.naksa-field-label input{
+  text-transform:none;font-weight:500;padding:9px 11px;border-radius:9px;border:1.5px solid rgba(27,103,153,0.18);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;color:var(--ink);background:var(--bg-2);outline:none;
+}
+.naksa-field-label input:focus{border-color:var(--blue);background:var(--bg)}
+
+.naksa-calib-badge{
+  display:inline-block;padding:5px 12px;border-radius:100px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.4px;margin-bottom:12px;
+}
+.naksa-calib-badge.not-calibrated{background:rgba(220,38,38,0.12);color:#DC2626}
+.naksa-calib-badge.low-confidence{background:rgba(200,145,26,0.16);color:var(--gold-dim)}
+.naksa-calib-badge.calibrated{background:rgba(46,158,91,0.14);color:#1E7A44}
+
+/* ── Plot list ────────────────────────────── */
+.naksa-item-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.naksa-item-list li{
+  display:flex;align-items:center;gap:8px;background:var(--bg-2);border-radius:9px;padding:6px 8px;
+  border:1.5px solid transparent;
+}
+.naksa-item-list li.active{border-color:var(--blue);background:var(--blue-pale)}
+.naksa-item-select{
+  flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:none;border:none;
+  cursor:pointer;text-align:left;padding:2px 4px;
+}
+.naksa-item-select strong{font-size:12.5px;color:var(--ink)}
+.naksa-item-select span{font-size:11px;color:var(--muted)}
+.naksa-item-delete{background:none;border:none;color:#DC2626;cursor:pointer;padding:6px;font-size:12px;flex-shrink:0}
+
+/* ── Measure-tool unit toggle ─────────────── */
+.naksa-unit-toggle-label{display:block;font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin:10px 0 6px}
+.naksa-unit-toggle{display:flex;gap:2px;background:var(--bg-2);border-radius:100px;padding:3px}
+.naksa-unit-toggle-btn{
+  flex:1;border:none;background:none;padding:6px 4px;border-radius:100px;
+  font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:var(--t);
+}
+.naksa-unit-toggle-btn:hover{color:var(--ink)}
+.naksa-unit-toggle-btn.active{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(6,13,21,0.15)}
+
+.naksa-feet-inches-row{display:flex;gap:8px;margin-bottom:10px}
+.naksa-feet-inches-row[hidden]{display:none}
+.naksa-feet-inches-row input{
+  flex:1;min-width:0;text-transform:none;font-weight:500;padding:9px 11px;border-radius:9px;
+  border:1.5px solid rgba(27,103,153,0.18);font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;
+  color:var(--ink);background:var(--bg-2);outline:none;
+}
+.naksa-feet-inches-row input:focus{border-color:var(--blue);background:var(--bg)}
+
+/* ── Canvas workspace ─────────────────────── */
+.naksa-canvas-container{position:relative;width:100%;height:100%;min-height:420px;background:repeating-conic-gradient(#e9e5df 0% 25%, #f4f1ec 0% 50%) 50% / 22px 22px;border-radius:var(--rl);overflow:hidden}
+.naksa-canvas-container canvas{display:block}
+.naksa-canvas-empty-state{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--muted);gap:10px;text-align:center;padding:24px;
+}
+.naksa-canvas-empty-state[hidden]{display:none}
+.naksa-canvas-empty-state i{font-size:40px;color:rgba(27,103,153,0.35)}
+.naksa-canvas-empty-state p{font-size:14px;font-weight:600;max-width:280px}
+.naksa-coord-hud{
+  position:absolute;bottom:12px;left:12px;background:rgba(6,13,21,0.78);color:#fff;
+  padding:6px 12px;border-radius:8px;font-size:11.5px;font-family:'Plus Jakarta Sans',monospace;
+  pointer-events:none;
+}
+
+/* ── Precision crosshair ──────────────────────────────────────────────
+   White + mix-blend-mode:difference inverts whatever is underneath, so
+   the guide lines stay visible over both light and dark parts of the map
+   without needing a fixed color that could disappear against some scans. */
+.naksa-crosshair-line{position:absolute;pointer-events:none;background:#fff;mix-blend-mode:difference;z-index:5;display:none}
+.naksa-crosshair-v{top:0;bottom:0;width:1px}
+.naksa-crosshair-h{left:0;right:0;height:1px}
+.naksa-canvas-container.naksa-precision-cursor,
+.naksa-canvas-container.naksa-precision-cursor canvas{cursor:crosshair}
+
+/* ── Magnifier loupe ──────────────────────────────────────────────────
+   The Fabric canvas underneath already has its OWN wrapper div at
+   position:absolute inset:0 z-index:0-ish — z-index:6 here just needs to
+   clear that and the crosshair (z-index:5), not fight for a specific value. */
+.naksa-magnifier{
+  position:absolute;pointer-events:none;z-index:6;display:none;
+  border-radius:50%;border:3px solid #fff;box-shadow:0 6px 20px rgba(6,13,21,0.35);
+}
+
+/* ── Results ──────────────────────────────── */
+.naksa-empty-note{font-size:12.5px;color:var(--muted);line-height:1.6;margin:0}
+.naksa-empty-note-warn{color:var(--gold-dim);font-weight:600}
+.naksa-empty-note-error{color:#DC2626;font-weight:600}
+
+.naksa-area-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.naksa-area-figure{
+  background:var(--bg-2);border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:2px;
+}
+.naksa-area-figure-primary{background:var(--blue-pale)}
+.naksa-area-value{font-family:'Sora',sans-serif;font-size:16px;font-weight:800;color:var(--ink)}
+.naksa-area-figure-primary .naksa-area-value{color:var(--blue)}
+.naksa-area-unit{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px}
+
+.naksa-unit-system{margin-bottom:10px}
+.naksa-unit-system h5{margin:0 0 3px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);font-weight:700}
+.naksa-unit-system p{margin:0;font-size:13.5px;color:var(--ink);font-weight:700;font-family:'Sora',sans-serif}
+
+/* ── Help modal body ──────────────────────── */
+.naksa-help-body ol{margin:0 0 16px;padding-left:20px;display:flex;flex-direction:column;gap:10px}
+.naksa-help-body li{font-size:13.5px;line-height:1.6;color:var(--text)}
+.naksa-help-body li strong{color:var(--ink)}
+
+/* ── Mobile bottom toolbar ────────────────── */
+.naksa-mobile-toolbar{display:none}
+
+/* ===========================================
+   RESPONSIVE
+   =========================================== */
+@media(max-width:1180px){
+  .naksa-app{grid-template-columns:260px 1fr 280px}
+}
+
+@media(max-width:900px){
+  .naksa-app{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    grid-template-areas:"topbar" "body";
+    padding:14px 12px 84px;
+    min-height:calc(100vh - var(--header-h));
+  }
+  .naksa-panel-left,.naksa-panel-center,.naksa-panel-right{grid-area:body;max-height:none;display:none}
+  .naksa-app[data-mobile-view="tools"] .naksa-panel-left{display:block}
+  .naksa-app[data-mobile-view="map"] .naksa-panel-center{display:block;height:calc(100vh - var(--header-h) - 150px);min-height:360px}
+  .naksa-app[data-mobile-view="results"] .naksa-panel-right{display:block}
+
+  .naksa-mobile-toolbar{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:600;
+    background:var(--bg);border-top:1.5px solid var(--rule);box-shadow:0 -4px 20px rgba(6,13,21,0.08);
+  }
+  .naksa-mobile-toolbar button{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;
+    background:none;border:none;color:var(--muted);font-size:10.5px;font-weight:700;cursor:pointer;
+  }
+  .naksa-mobile-toolbar button i{font-size:16px}
+  .naksa-mobile-toolbar button.active{color:var(--blue)}
+  .naksa-topbar-title h1{font-size:1.1rem}
+}
+
+@media(max-width:480px){
+  .naksa-area-grid{grid-template-columns:1fr 1fr}
+  .naksa-toolgrid{grid-template-columns:repeat(4,1fr)}
+}

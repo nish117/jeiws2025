@@ -100,6 +100,17 @@ const contactForm = document.getElementById("contactForm");
 if (contactForm) {
     contactForm.addEventListener("submit", async function(event) {
         event.preventDefault();
+
+        const captchaErrorMsg = document.getElementById('contactCaptchaErrorMsg');
+        if (typeof grecaptcha === 'undefined' || grecaptcha.getResponse().length === 0) {
+            if (captchaErrorMsg) {
+                captchaErrorMsg.style.display = 'block';
+                captchaErrorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+        if (captchaErrorMsg) captchaErrorMsg.style.display = 'none';
+
         const btn = this.querySelector('button[type="submit"]') || this.querySelector('button');
         const origText = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
@@ -110,6 +121,11 @@ if (contactForm) {
             if (data.ok) {
                 document.getElementById("modal").style.display = "flex";
                 contactForm.reset();
+            } else if (data.error === 'captcha_missing' || data.error === 'captcha_failed') {
+                if (captchaErrorMsg) {
+                    captchaErrorMsg.style.display = 'block';
+                    captchaErrorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             } else {
                 console.error("Mail error:", data.error);
                 alert("Could not send your message. Please try again or contact us directly.");
@@ -118,6 +134,7 @@ if (contactForm) {
             console.error("Fetch error:", err);
             alert("Network error. Please check your connection and try again.");
         } finally {
+            if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
             if (btn) { btn.disabled = false; btn.textContent = origText; }
         }
     });
