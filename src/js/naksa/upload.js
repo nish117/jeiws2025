@@ -6,28 +6,26 @@
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024; // 30 MB — generous for a scanned survey sheet
-const MAX_LONG_EDGE_PX = 4000; // caps memory/perf and stays under mobile Safari's canvas backing-store limits
+// Caps memory/perf and stays under mobile Safari's canvas backing-store limits.
+// Touch devices get a lower cap — phones hold several copies of the image
+// (data URL, preview <img>, Fabric's canvas) and low-RAM ones kill the tab.
+const IS_TOUCH_DEVICE = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+const MAX_LONG_EDGE_PX = IS_TOUCH_DEVICE ? 3000 : 4000;
 
 export function validateFile(file) {
     if (!file) return { ok: false, error: 'No file selected.' };
     const typeOk = ACCEPTED_TYPES.includes(file.type) ||
         /\.(jpe?g|png|webp)$/i.test(file.name || '');
     if (!typeOk) {
+        if (/heic|heif/i.test(file.type) || /\.hei[cf]$/i.test(file.name || '')) {
+            return { ok: false, error: 'HEIC photos aren\'t supported. On iPhone, set Camera → Formats → Most Compatible, or take a screenshot of the map and upload that.' };
+        }
         return { ok: false, error: 'Unsupported file type. Upload a JPG, PNG, or WEBP image.' };
     }
     if (file.size > MAX_FILE_SIZE_BYTES) {
         return { ok: false, error: `File is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum is ${MAX_FILE_SIZE_BYTES / (1024 * 1024)} MB.` };
     }
     return { ok: true };
-}
-
-function readFileAsDataUrl(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error('Could not read the file.'));
-        reader.readAsDataURL(file);
-    });
 }
 
 function loadImageElement(src) {
@@ -65,12 +63,27 @@ export async function processUploadedFile(file) {
     const validation = validateFile(file);
     if (!validation.ok) throw new Error(validation.error);
 
-    const dataUrl = await readFileAsDataUrl(file);
-    const img = await loadImageElement(dataUrl);
+    // Object URL instead of a FileReader data URL — avoids holding a base64
+    // copy of a multi-MB phone photo in memory just to decode it.
+    const objectUrl = URL.createObjectURL(file);
+    let img;
+    try {
+        img = await loadImageElement(objectUrl);
+    } finally {
+        URL.revokeObjectURL(objectUrl);
+    }
     const { canvas, width, height } = downscaleToCanvas(img, img.naturalWidth, img.naturalHeight);
 
+    // Photos re-encoded as PNG balloon to tens of MB; keep PNG only for PNG
+    // sources (typically clean scans where lossless matters).
+    const isPng = file.type === 'image/png' || /\.png$/i.test(file.name || '');
+    const dataUrl = isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.92);
+    if (!dataUrl || dataUrl === 'data:,') {
+        throw new Error('This image is too large for your device to process. Try a smaller photo or a screenshot of the map.');
+    }
+
     return {
-        dataUrl: canvas.toDataURL('image/png'),
+        dataUrl,
         width,
         height,
         name: file.name || 'uploaded-map'

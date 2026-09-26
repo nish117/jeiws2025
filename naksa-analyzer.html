@@ -93,7 +93,10 @@
                     <p>Drag &amp; drop your map here, or <span>browse files</span></p>
                     <span class="naksa-dropzone-hint">JPG, PNG or WEBP — up to 30MB</span>
                 </div>
-                <input type="file" id="naksaFileInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" hidden>
+                <!-- Visually hidden rather than `hidden`: some mobile browsers/in-app webviews
+                     refuse to open the picker for a display:none input. `image/*` also lets
+                     Android offer Gallery/Camera instead of only a file manager. -->
+                <input type="file" id="naksaFileInput" class="naksa-file-input" accept="image/*" tabindex="-1" aria-hidden="true">
                 <div class="naksa-file-preview" id="naksaFilePreviewWrap" hidden>
                     <img id="naksaFilePreviewImg" alt="Uploaded map preview">
                     <div class="naksa-file-preview-info">
@@ -180,6 +183,7 @@
                 <div class="naksa-canvas-empty-state" id="naksaCanvasEmptyState">
                     <i class="fas fa-map-location-dot"></i>
                     <p>Upload a Naapi Naksa to begin</p>
+                    <button type="button" class="naksa-empty-upload-btn" id="naksaEmptyUploadBtn"><i class="fas fa-cloud-arrow-up"></i> Choose map image</button>
                 </div>
                 <div class="naksa-coord-hud" id="naksaCoordHud" hidden></div>
             </div>

@@ -73,8 +73,11 @@ function main() {
             byId('naksaFilePreviewName').textContent = `${image.name} (${image.width}×${image.height}px)`;
             byId('naksaFilePreviewWrap').hidden = false;
             sections.advance('naksaUploadSection', 'naksaCalibrationSection');
+            uiLayout.setMobileView('map');
         } catch (err) {
             showUploadError(err.message || 'Could not process this file.');
+            // On phones the error lives in the Tools panel — switch there so it's actually seen.
+            uiLayout.setMobileView('tools');
         }
     }
 
@@ -83,6 +86,9 @@ function main() {
         fileInputEl: byId('naksaFileInput'),
         onFile: handleFile
     });
+    // Phones open on the Map tab, where the upload section isn't visible — give
+    // the empty canvas its own button straight into the file picker.
+    byId('naksaEmptyUploadBtn').addEventListener('click', () => byId('naksaFileInput').click());
 
     document.addEventListener('paste', (e) => {
         const target = e.target;
@@ -422,7 +428,7 @@ function main() {
     syncDrawUi();
 
     // ── UI layout (mobile tabs + help modal + collapsible left-panel steps) ──
-    createUiLayout({ rootEl: byId('naksaApp'), mobileTabButtons: Array.from(document.querySelectorAll('.naksa-mobile-toolbar button')) });
+    const uiLayout = createUiLayout({ rootEl: byId('naksaApp'), mobileTabButtons: Array.from(document.querySelectorAll('.naksa-mobile-toolbar button')) });
     createHelpModal({ overlayEl: byId('naksaHelpModal'), openTriggerEl: byId('naksaHelpBtn'), closeTriggerEl: byId('naksaHelpCloseBtn') });
     const sections = createCollapsibleSections(byId('naksaLeftPanel'));
 

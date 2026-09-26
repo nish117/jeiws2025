@@ -174,6 +174,12 @@
 .naksa-canvas-empty-state[hidden]{display:none}
 .naksa-canvas-empty-state i{font-size:40px;color:rgba(27,103,153,0.35)}
 .naksa-canvas-empty-state p{font-size:14px;font-weight:600;max-width:280px}
+.naksa-empty-upload-btn{
+  display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border:none;border-radius:var(--r);
+  background:var(--blue);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;
+}
+.naksa-canvas-empty-state .naksa-empty-upload-btn i{font-size:16px;color:inherit}
+.naksa-file-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
 .naksa-coord-hud{
   position:absolute;bottom:12px;left:12px;background:rgba(6,13,21,0.78);color:#fff;
   padding:6px 12px;border-radius:8px;font-size:11.5px;font-family:'Plus Jakarta Sans',monospace;
