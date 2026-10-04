@@ -1,0 +1,14 @@
+# JEIWS Accounts
+DirectoryIndex index.php
+Options -Indexes
+
+# Keep search engines out of the finance app entirely.
+<IfModule mod_headers.c>
+    Header set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+
+# Internal folders and files are never served directly.
+RedirectMatch 404 ^.*/accounts/(includes|db)(/|$)
+<FilesMatch "\.(sql|md|log|ini)$">
+    Require all denied
+</FilesMatch>

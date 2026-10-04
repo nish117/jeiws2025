@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 
 Disallow: /admin/
+Disallow: /accounts/
 Disallow: /data/
 Disallow: /config/
 Disallow: /analytics.php
