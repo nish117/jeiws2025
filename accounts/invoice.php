@@ -272,13 +272,15 @@ require __DIR__ . '/includes/layout-top.php';
 
 <?php
 // Photos added here are shrunk in the browser the same way as on the edit page, then submitted.
-$inlineScript = <<<'JS'
+$parseSize = fn(string $v): int => match (strtolower(substr(trim($v), -1))) { 'g' => (int)$v << 30, 'm' => (int)$v << 20, 'k' => (int)$v << 10, default => (int)$v };
+$inlineScript = 'window.accUpload = ' . json_encode(['postLimit' => $parseSize(ini_get('post_max_size') ?: '8M') - 256 * 1024, 'fileLimit' => min($parseSize(ini_get('upload_max_filesize') ?: '2M'), ATTACH_MAX_BYTES)]) . ";
+" . <<<'JS'
 (function () {
     const input = document.getElementById('moreFiles');
     if (!input) return;
     function shrink(file) {
         return new Promise(resolve => {
-            if (!file.type.startsWith('image/')) return resolve(file);
+            if (!file.type.startsWith('image/') && !/\.hei[cf]$/i.test(file.name)) return resolve(file);
             const url = URL.createObjectURL(file), im = new Image();
             im.onload = () => {
                 const s = Math.min(1, 2000 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
@@ -291,9 +293,20 @@ $inlineScript = <<<'JS'
         });
     }
     input.addEventListener('change', async () => {
-        document.getElementById('moreNote').textContent = 'Uploading…';
-        const dt = new DataTransfer();
-        for (const f of input.files) dt.items.add(await shrink(f));
+        const note = document.getElementById('moreNote'), lim = window.accUpload, mb = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+        note.textContent = 'Preparing…';
+        const dt = new DataTransfer(), problems = [];
+        for (const f of input.files) {
+            const isHeic = /hei[cf]$/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
+            const out = await shrink(f);
+            if (out === f && isHeic) { problems.push(`${f.name}: iPhone HEIC photo this browser can't read — use "Most Compatible" camera format or a screenshot`); continue; }
+            if (out.size > lim.fileLimit) { problems.push(`${f.name} is ${mb(out.size)} (max ${mb(lim.fileLimit)})`); continue; }
+            dt.items.add(out);
+        }
+        const total = Array.from(dt.files).reduce((s, f) => s + f.size, 0);
+        if (total > lim.postLimit) problems.push(`together ${mb(total)} — upload at most ${mb(lim.postLimit)} at a time`);
+        if (problems.length || !dt.files.length) { note.textContent = problems.join('; ') || 'Nothing to upload.'; note.className = 'small text-danger'; input.value = ''; return; }
+        note.textContent = 'Uploading…';
         input.files = dt.files;
         document.getElementById('uploadForm').submit();
     });

@@ -38,6 +38,20 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
+// A POST larger than post_max_size arrives with $_POST and $_FILES emptied by
+// PHP — without this check it would surface as a misleading "session expired"
+// CSRF failure. Say what actually happened.
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && empty($_POST) && empty($_FILES) && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    $limit = ini_get('post_max_size') ?: '8M';
+    http_response_code(413);
+    exit('<!doctype html><meta charset="utf-8"><title>Upload too large</title>'
+        . '<div style="font-family:system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 20px;line-height:1.5">'
+        . '<h1 style="font-size:1.3rem">The files were too large to upload</h1>'
+        . '<p>Everything sent at once came to ' . round((int)$_SERVER['CONTENT_LENGTH'] / 1048576, 1) . ' MB, but the server accepts at most ' . htmlspecialchars($limit) . ' per save, so nothing was saved.</p>'
+        . '<p>Go back and attach fewer files at a time, or use a smaller PDF (photos are shrunk automatically). You can add more files to the invoice after saving it.</p>'
+        . '<p><a href="javascript:history.back()">← Go back</a></p></div>');
+}
+
 // Reject input that isn't valid UTF-8. MySQL would otherwise silently cut the
 // text at the first bad byte (e.g. "Nabil – Current" saved as "Nabil ").
 (function () {

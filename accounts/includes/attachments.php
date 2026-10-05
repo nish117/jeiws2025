@@ -53,6 +53,7 @@ function store_attachments(?array $field, string $entity, int $entityId, int $us
         if ($file['size'] > ATTACH_MAX_BYTES) { $errors[] = "{$name}: larger than 10 MB."; continue; }
 
         $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+        if (in_array($mime, ['image/heic', 'image/heif'], true)) { $errors[] = "{$name}: iPhone HEIC photos can't be read — set the iPhone camera to 'Most Compatible', or upload a screenshot of the bill."; continue; }
         if (!isset(ATTACH_TYPES[$mime])) { $errors[] = "{$name}: only JPG, PNG, WEBP photos or PDF files can be attached."; continue; }
 
         $stored = bin2hex(random_bytes(16));
@@ -61,9 +62,10 @@ function store_attachments(?array $field, string $entity, int $entityId, int $us
             $ok = move_uploaded_file($file['tmp_name'], $dest .= '.pdf');
             $finalMime = $mime;
         } else {
-            $ok = reencode_image($file['tmp_name'], $mime, $dest .= '.jpg');
+            $result = reencode_image($file['tmp_name'], $mime, $dest .= '.jpg');
             $finalMime = 'image/jpeg';
-            if (!$ok) { $errors[] = "{$name}: couldn't read this image."; continue; }
+            if ($result !== true) { if (is_file($dest)) unlink($dest); $errors[] = "{$name}: {$result}"; continue; }
+            $ok = true;
         }
         if (!$ok) { $errors[] = "{$name}: couldn't be saved."; continue; }
 
@@ -74,34 +76,72 @@ function store_attachments(?array $field, string $entity, int $entityId, int $us
     return ['saved' => $saved, 'errors' => $errors];
 }
 
-/** Decodes, fixes orientation, downsizes and saves an image as JPEG. */
-function reencode_image(string $src, string $mime, string $dest): bool {
+const ATTACH_MAX_MEGAPIXELS = 120;   // ≈ 12000×10000 — beyond any phone camera; guards against decompression bombs
+
+/**
+ * Decodes, downsizes, fixes orientation and saves an image as JPEG.
+ * Returns true, or a message explaining why the image can't be used.
+ *
+ * A decoded image needs about 4–5 bytes per pixel regardless of file size:
+ * a 0.4 MB, 24-megapixel JPEG needs ~100 MB once opened, and today's 48–50 MP
+ * phone photos ~250 MB. The size is checked first and memory raised just for
+ * this request, so a large photo is handled — or refused with a clear
+ * message — instead of crashing the page.
+ */
+function reencode_image(string $src, string $mime, string $dest): bool|string {
+    $info = @getimagesize($src);
+    if (!$info || $info[0] < 1 || $info[1] < 1) return "couldn't read this image.";
+    [$w, $h] = $info;
+    $megapixels = $w * $h / 1_000_000;
+    if ($megapixels > ATTACH_MAX_MEGAPIXELS) return sprintf('image is %.0f megapixels — too large. Please resize it below %d MP.', $megapixels, ATTACH_MAX_MEGAPIXELS);
+
+    $scale = min(1, ATTACH_MAX_EDGE / max($w, $h));
+    [$ow, $oh] = [max(1, (int)round($w * $scale)), max(1, (int)round($h * $scale))];
+    $needed = (int)($w * $h * 5.2 + $ow * $oh * 5.2 * 2) + 24 * 1048576;   // source + output + rotation copy + headroom
+    if (!ensure_memory_for($needed)) {
+        return sprintf("image is %.0f megapixels and the server doesn't have enough memory to process it. Please resize the photo (or let the browser shrink it) and try again.", $megapixels);
+    }
+
     $img = match ($mime) {
         'image/jpeg' => @imagecreatefromjpeg($src),
         'image/png'  => @imagecreatefrompng($src),
         'image/webp' => @imagecreatefromwebp($src),
         default      => false,
     };
-    if (!$img) return false;
+    if (!$img) return "couldn't read this image.";
+
+    // Shrink first, then work on the small copy only.
+    // Flatten onto white so transparent PNG receipts don't turn black as JPEG.
+    $out = imagecreatetruecolor($ow, $oh);
+    imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255));
+    imagecopyresampled($out, $img, 0, 0, 0, 0, $ow, $oh, $w, $h);
+    imagedestroy($img);
 
     if ($mime === 'image/jpeg' && function_exists('exif_read_data')) {
         $orientation = (int)(@exif_read_data($src)['Orientation'] ?? 1);
-        $rotated = match ($orientation) { 3 => imagerotate($img, 180, 0), 6 => imagerotate($img, -90, 0), 8 => imagerotate($img, 90, 0), default => null };
-        if ($rotated) { imagedestroy($img); $img = $rotated; }
+        $rotated = match ($orientation) { 3 => imagerotate($out, 180, 0), 6 => imagerotate($out, -90, 0), 8 => imagerotate($out, 90, 0), default => null };
+        if ($rotated) { imagedestroy($out); $out = $rotated; }
     }
-
-    [$w, $h] = [imagesx($img), imagesy($img)];
-    $scale = min(1, ATTACH_MAX_EDGE / max($w, $h));
-    // Flatten onto white so transparent PNG receipts don't turn black as JPEG.
-    $out = imagecreatetruecolor(max(1, (int)round($w * $scale)), max(1, (int)round($h * $scale)));
-    imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255));
-    imagecopyresampled($out, $img, 0, 0, 0, 0, imagesx($out), imagesy($out), $w, $h);
     $ok = imagejpeg($out, $dest, 85);
-    imagedestroy($img);
     imagedestroy($out);
-    return $ok;
+    return $ok ?: "couldn't save the image.";
 }
 
+/** Raises this request's memory limit if $bytes more are needed (up to 1 GB). False if the host won't allow it. */
+function ensure_memory_for(int $bytes): bool {
+    $toBytes = function (string $v): int {
+        $v = trim($v);
+        if ($v === '-1') return PHP_INT_MAX;
+        $n = (int)$v;
+        return match (strtolower(substr($v, -1))) { 'g' => $n << 30, 'm' => $n << 20, 'k' => $n << 10, default => $n };
+    };
+    $limit = $toBytes((string)ini_get('memory_limit'));
+    $want = memory_get_usage() + $bytes;
+    if ($want <= $limit) return true;
+    if ($want > 1 << 30) return false;
+    @ini_set('memory_limit', (string)(int)ceil($want / 1048576) . 'M');
+    return $toBytes((string)ini_get('memory_limit')) >= $want;
+}
 function list_attachments(string $entity, int $entityId): array {
     $stmt = db()->prepare('SELECT * FROM acc_attachments WHERE entity = ? AND entity_id = ? ORDER BY id');
     $stmt->execute([$entity, $entityId]);

@@ -72,9 +72,11 @@ $projectRows = db()->query("SELECT id, code, name, retention_percent, status FRO
 $lineAccounts = invoice_line_accounts($type);
 $existingFiles = $inv ? list_attachments('invoice', $id) : [];
 $vatRate = (float)setting('vat_rate', '13');
-$uploadLimit = (function () {
-    $parse = function (string $v): int { $n = (int)$v; return match (strtolower(substr(trim($v), -1))) { 'g' => $n << 30, 'm' => $n << 20, 'k' => $n << 10, default => $n }; };
-    return min($parse(ini_get('upload_max_filesize') ?: '2M'), $parse(ini_get('post_max_size') ?: '8M'), ATTACH_MAX_BYTES);
+$parseSize = function (string $v): int { $n = (int)$v; return match (strtolower(substr(trim($v), -1))) { 'g' => $n << 30, 'm' => $n << 20, 'k' => $n << 10, default => $n }; };
+// Whole-save limit: the form fields need a little room too.
+$postLimit = $parseSize(ini_get('post_max_size') ?: '8M') - 256 * 1024;
+$uploadLimit = (function () use ($parseSize) {
+    return min($parseSize(ini_get('upload_max_filesize') ?: '2M'), $parseSize(ini_get('post_max_size') ?: '8M'), ATTACH_MAX_BYTES);
 })();
 $startWithPhoto = !empty($_GET['photo']) || $existingFiles;
 
@@ -269,7 +271,7 @@ $isSales = $type === 'sales';
 
 <?php
 $pageScripts = [acc_url('../site/nepali-date.js')];
-$inlineScript = 'window.accInvoice = ' . json_encode(['vatRate' => $vatRate, 'uploadLimit' => $uploadLimit, 'isSales' => $isSales], JSON_HEX_TAG) . ";\n" . <<<'JS'
+$inlineScript = 'window.accInvoice = ' . json_encode(['vatRate' => $vatRate, 'uploadLimit' => $uploadLimit, 'postLimit' => $postLimit, 'isSales' => $isSales], JSON_HEX_TAG) . ";\n" . <<<'JS'
 (function () {
     const cfg = window.accInvoice;
     const tbody = document.getElementById('invLines');
@@ -385,26 +387,49 @@ $inlineScript = 'window.accInvoice = ' . json_encode(['vatRate' => $vatRate, 'up
             im.src = url;
         });
     }
+    // Files picked in several goes accumulate here (assigning input.files replaces, so keep our own list).
+    let pending = [];
+    const mb = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+    function syncInput(problems = []) {
+        const dt = new DataTransfer();
+        pending.forEach(p => dt.items.add(p.file));
+        fileInput.files = dt.files;
+        const total = pending.reduce((s, p) => s + p.file.size, 0);
+        if (total > cfg.postLimit) problems.push(`together the new files are ${mb(total)} — the server accepts ${mb(cfg.postLimit)} per save. Remove some, then add them after saving`);
+        note.textContent = problems.length ? problems.join('; ') + '.' : (pending.length ? `${pending.length} file(s), ${mb(total)}, will be attached when you save.` : 'Photos are shrunk before upload.');
+        note.classList.toggle('text-danger', problems.length > 0);
+        document.querySelectorAll('#invForm button[type=submit]').forEach(b => { if (b.value !== 'delete') b.disabled = total > cfg.postLimit; });
+    }
     fileInput.addEventListener('change', async () => {
-        const chosen = Array.from(fileInput.files);
-        if (!chosen.length) return;
+        const chosen = Array.from(fileInput.files).filter(f => !pending.some(p => p.original === f));
+        if (!chosen.length) { syncInput(); return; }
         layout.classList.add('has-photo');
         note.textContent = 'Preparing…';
-        const dt = new DataTransfer(), problems = [];
+        const problems = [];
         for (const f of chosen) {
-            const out = f.type.startsWith('image/') ? await shrink(f) : f;
-            if (out.size > cfg.uploadLimit) { problems.push(`${f.name} is too large (${(out.size / 1048576).toFixed(1)} MB)`); continue; }
-            dt.items.add(out);
+            const isHeic = /hei[cf]$/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
+            const out = f.type.startsWith('image/') || isHeic ? await shrink(f) : f;
+            if (out === f && isHeic) { problems.push(`${f.name} is an iPhone HEIC photo this browser can't read — choose "Most Compatible" in iPhone camera settings, or take a screenshot of it`); continue; }
+            if (out.size > cfg.uploadLimit) { problems.push(`${f.name} is too large (${mb(out.size)}; max ${mb(cfg.uploadLimit)} per file)`); continue; }
             const src = URL.createObjectURL(out), isPdf = out.type === 'application/pdf';
             const t = document.createElement('div');
             t.className = 'acc-thumb acc-thumb-new'; t.dataset.src = src; t.dataset.pdf = isPdf ? '1' : '0';
-            t.innerHTML = isPdf ? '<span class="acc-thumb-pdf">PDF</span>' : `<img src="${src}" alt="">`;
+            t.innerHTML = (isPdf ? '<span class="acc-thumb-pdf">PDF</span>' : `<img src="${src}" alt="">`)
+                + '<button type="button" class="acc-thumb-remove border-0" title="Don\'t attach this file" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button>';
+            const entry = { file: out, original: f, thumb: t };
+            t.querySelector('button').addEventListener('click', e => {
+                e.stopPropagation();
+                pending = pending.filter(p => p !== entry);
+                t.remove(); URL.revokeObjectURL(src);
+                const next = thumbs.querySelector('.acc-thumb');
+                if (next) show(next.dataset.src, next.dataset.pdf === '1'); else { img.hidden = true; pdf.hidden = true; empty.hidden = false; }
+                syncInput();
+            });
+            pending.push(entry);
             thumbs.appendChild(t);
             show(src, isPdf);
         }
-        fileInput.files = dt.files;
-        note.textContent = problems.length ? problems.join('; ') + '.' : `${dt.files.length} file(s) will be attached when you save.`;
-        note.classList.toggle('text-danger', problems.length > 0);
+        syncInput(problems);
     });
 
     // Card layout for the lines on phones and whenever the photo panel takes half the width.
