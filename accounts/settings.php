@@ -74,6 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($action === 'upload_test') {
+        require_once __DIR__ . '/includes/attachments.php';
+        require_once __DIR__ . '/includes/system-check.php';
+        $_SESSION['upload_test'] = upload_self_test();
+        redirect('settings.php#system');
+    }
+
     if ($action === 'update_user') {
         $targetId = (int)($_POST['user_id'] ?? 0);
         $role     = (string)($_POST['role'] ?? '');
@@ -98,6 +105,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $settings = settings();
+require_once __DIR__ . '/includes/attachments.php';
+require_once __DIR__ . '/includes/system-check.php';
+$checks = system_checks();
+$systemProblems = count(array_filter($checks, fn($c) => $c['status'] === 'fail'));
+$errorsLog = recent_errors(20);
+$uploadTest = $_SESSION['upload_test'] ?? null;
+unset($_SESSION['upload_test']);
 $val = fn(string $key) => $_SERVER['REQUEST_METHOD'] === 'POST' && array_key_exists($key, $_POST) ? (string)$_POST[$key] : ($settings[$key] ?? '');
 $users = db()->query('SELECT id, full_name, email, role, is_active, last_login_at FROM acc_users ORDER BY is_active DESC, full_name')->fetchAll();
 
@@ -117,6 +131,7 @@ require __DIR__ . '/includes/layout-top.php';
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#company" type="button" role="tab">Company</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tax" type="button" role="tab">Tax &amp; currency</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">Users</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">System check<?php if ($systemProblems): ?> <span class="badge text-bg-danger"><?= $systemProblems ?></span><?php endif ?></button></li>
 </ul>
 
 <div class="tab-content">
@@ -233,6 +248,62 @@ require __DIR__ . '/includes/layout-top.php';
             </div>
             <div class="border-top px-4 py-3 text-end"><button class="btn btn-primary"><i class="fa-solid fa-user-plus me-1"></i> Add user</button></div>
         </form>
+    </div>
+
+    <div class="tab-pane fade" id="system" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-xl-7">
+                <div class="acc-card">
+                    <div class="acc-card-head"><h2>Server readiness</h2><span class="small text-body-secondary">PHP <?= e(PHP_VERSION) ?> · <?= e(php_sapi_name()) ?></span></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <tbody>
+                            <?php $group = null; foreach ($checks as $c): ?>
+                                <?php if ($c['group'] !== $group): $group = $c['group']; ?><tr><th colspan="3" class="small text-uppercase text-body-secondary pt-3" style="letter-spacing:.05em"><?= e($group) ?></th></tr><?php endif ?>
+                                <tr>
+                                    <td style="width:28px"><?= $c['status'] === 'ok' ? '<i class="fa-solid fa-circle-check text-success"></i>' : ($c['status'] === 'warn' ? '<i class="fa-solid fa-triangle-exclamation text-warning"></i>' : '<i class="fa-solid fa-circle-xmark text-danger"></i>') ?></td>
+                                    <td><?= e($c['label']) ?><?php if ($c['status'] !== 'ok' && $c['help']): ?><div class="small text-body-secondary"><?= e($c['help']) ?></div><?php endif ?></td>
+                                    <td class="small text-end text-nowrap acc-code"><?= e($c['value']) ?></td>
+                                </tr>
+                            <?php endforeach ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-5">
+                <form method="post" class="acc-card mb-3">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="upload_test">
+                    <div class="acc-card-head"><h2>Upload self-test</h2><button class="btn btn-sm btn-outline-primary">Run test</button></div>
+                    <div class="acc-card-body small">
+                        <?php if (!$uploadTest): ?>
+                            <span class="text-body-secondary">Saves, processes and deletes a small test photo and PDF in the uploads folder — the same steps a real bill upload takes.</span>
+                        <?php else: ?>
+                            <?php foreach ($uploadTest as [$label, $result]): ?>
+                                <div class="d-flex gap-2 py-1"><?= $result === true ? '<i class="fa-solid fa-circle-check text-success mt-1"></i>' : '<i class="fa-solid fa-circle-xmark text-danger mt-1"></i>' ?>
+                                    <span><?= e($label) ?><?= is_string($result) ? '<div class="text-body-secondary">' . e($result) . '</div>' : '' ?></span></div>
+                            <?php endforeach ?>
+                        <?php endif ?>
+                    </div>
+                </form>
+                <div class="acc-card">
+                    <div class="acc-card-head"><h2>Recent errors</h2><span class="small text-body-secondary"><?= count($errorsLog) ?></span></div>
+                    <?php if (!$errorsLog): ?>
+                        <div class="acc-card-body small text-body-secondary">No errors recorded. If someone sees "Something went wrong", the reference code they're shown appears here.</div>
+                    <?php else: ?>
+                        <ul class="list-unstyled small mb-0">
+                            <?php foreach ($errorsLog as $err): ?>
+                                <li class="px-3 py-2 border-bottom">
+                                    <div class="d-flex justify-content-between"><strong class="acc-code"><?= e($err['ref'] ?? '') ?></strong><span class="text-body-secondary"><?= e($err['time'] ?? '') ?></span></div>
+                                    <div class="text-danger text-break"><?= e(($err['type'] ?? '') . ': ' . ($err['message'] ?? '')) ?></div>
+                                    <div class="text-body-secondary text-break"><?= e(($err['method'] ?? '') . ' ' . ($err['url'] ?? '')) ?> · <?= e(basename((string)($err['where'] ?? ''))) ?></div>
+                                </li>
+                            <?php endforeach ?>
+                        </ul>
+                    <?php endif ?>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

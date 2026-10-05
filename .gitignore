@@ -8,3 +8,4 @@ data/log/
 
 config/db.php
 config/db.live.php
+config/mail.php

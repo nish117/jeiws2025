@@ -23,8 +23,38 @@ const ATTACH_TYPES = [
 
 function attachment_dir(): string {
     $dir = ACC_ROOT . '/../data/attachments';
-    if (!is_dir($dir)) mkdir($dir, 0750, true);
+    if (!is_dir($dir)) @mkdir($dir, 0750, true);
     return $dir;
+}
+
+/** True when GD can decode and re-encode the uploaded formats. */
+function gd_available(): bool {
+    return function_exists('imagecreatefromjpeg') && function_exists('imagecreatefrompng') && function_exists('imagejpeg') && function_exists('imagecopyresampled');
+}
+
+/**
+ * File type from the file's content, never its name. Uses fileinfo when the
+ * host has it; otherwise falls back to the image header (getimagesize, core
+ * PHP) and the PDF signature.
+ */
+function detect_mime(string $path): string {
+    if (class_exists('finfo')) {
+        $mime = (string)(new finfo(FILEINFO_MIME_TYPE))->file($path);
+        if ($mime !== '') return $mime;
+    }
+    $head = (string)@file_get_contents($path, false, null, 0, 16);
+    if (str_starts_with($head, '%PDF-')) return 'application/pdf';
+    if (preg_match('/^.{4}ftyp(heic|heix|hevc|mif1|msf1)/s', $head)) return 'image/heic';
+    $info = @getimagesize($path);
+    return $info['mime'] ?? 'application/octet-stream';
+}
+
+/** Without GD: confirm the file decodes as an image header and isn't absurdly large. */
+function image_sanity_check(string $path): bool|string {
+    $info = @getimagesize($path);
+    if (!$info || $info[0] < 1 || $info[1] < 1) return "couldn't read this image.";
+    if ($info[0] * $info[1] / 1_000_000 > ATTACH_MAX_MEGAPIXELS) return 'image is too large in pixels. Please resize it.';
+    return true;
 }
 
 /** Normalises $_FILES['x'] (single or multiple) into a list of file arrays. */
@@ -52,14 +82,27 @@ function store_attachments(?array $field, string $entity, int $entityId, int $us
         if ($file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) { $errors[] = "{$name}: upload failed, please try again."; continue; }
         if ($file['size'] > ATTACH_MAX_BYTES) { $errors[] = "{$name}: larger than 10 MB."; continue; }
 
-        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+        $mime = detect_mime($file['tmp_name']);
         if (in_array($mime, ['image/heic', 'image/heif'], true)) { $errors[] = "{$name}: iPhone HEIC photos can't be read — set the iPhone camera to 'Most Compatible', or upload a screenshot of the bill."; continue; }
         if (!isset(ATTACH_TYPES[$mime])) { $errors[] = "{$name}: only JPG, PNG, WEBP photos or PDF files can be attached."; continue; }
 
+        $dir = attachment_dir();
+        if (!is_dir($dir) || !is_writable($dir)) {
+            error_log("[accounts] attachment folder not writable: {$dir}");
+            $errors[] = "{$name}: the server's file folder (data/attachments) is missing or not writable. Ask whoever manages the hosting to make it writable.";
+            continue;
+        }
         $stored = bin2hex(random_bytes(16));
-        $dest = attachment_dir() . '/' . $stored;
+        $dest = $dir . '/' . $stored;
         if ($mime === 'application/pdf') {
             $ok = move_uploaded_file($file['tmp_name'], $dest .= '.pdf');
+            $finalMime = $mime;
+        } elseif (!gd_available()) {
+            // No GD on this host: keep the (already browser-shrunk) image as uploaded, after
+            // confirming it really is an image of a sane size.
+            $check = image_sanity_check($file['tmp_name']);
+            if ($check !== true) { $errors[] = "{$name}: {$check}"; continue; }
+            $ok = move_uploaded_file($file['tmp_name'], $dest .= '.' . ATTACH_TYPES[$mime]);
             $finalMime = $mime;
         } else {
             $result = reencode_image($file['tmp_name'], $mime, $dest .= '.jpg');

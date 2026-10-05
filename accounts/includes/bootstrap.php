@@ -32,6 +32,52 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
+// ── Error capture ────────────────────────────────────────────────────
+// Any uncaught error or fatal (out of memory, a missing PHP extension …) is
+// written to data/log/accounts-errors.log with a reference code, and the user
+// sees a short page quoting that code instead of a bare "Internal Server
+// Error". Admins can read the log under Settings → System check.
+define('ACC_ERROR_LOG', ACC_ROOT . '/../data/log/accounts-errors.log');
+
+function acc_log_error(string $type, string $message, string $file, int $line): string {
+    $ref = strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+    $entry = json_encode([
+        'ref' => $ref, 'time' => date('Y-m-d H:i:s'), 'type' => $type, 'message' => substr($message, 0, 1000),
+        'where' => strtr($file, [DIRECTORY_SEPARATOR => '/']) . ':' . $line, 'url' => $_SERVER['REQUEST_URI'] ?? '', 'method' => $_SERVER['REQUEST_METHOD'] ?? '',
+        'user' => $_SESSION['acc_user_id'] ?? null, 'php' => PHP_VERSION,
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    $dir = dirname(ACC_ERROR_LOG);
+    if (!is_dir($dir)) @mkdir($dir, 0750, true);
+    @file_put_contents(ACC_ERROR_LOG, $entry . "\n", FILE_APPEND | LOCK_EX);
+    error_log("[accounts {$ref}] {$type}: {$message} at {$file}:{$line}");
+    return $ref;
+}
+
+function acc_error_page(string $ref): void {
+    if (headers_sent()) { echo "<p>Something went wrong (reference {$ref}).</p>"; return; }
+    while (ob_get_level() > 0) ob_end_clean();
+    http_response_code(500);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!doctype html><meta charset="utf-8"><title>Something went wrong</title>'
+        . '<div style="font-family:system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 20px;line-height:1.5">'
+        . '<h1 style="font-size:1.3rem">Something went wrong</h1>'
+        . '<p>The server hit an error and your last action may not have been saved. Please check before trying again.</p>'
+        . '<p>Reference: <strong style="font-family:monospace;font-size:1.1rem">' . $ref . '</strong></p>'
+        . '<p>An admin can see the details under <em>Settings → System check</em>.</p>'
+        . '<p><a href="javascript:history.back()">← Go back</a></p></div>';
+}
+
+set_exception_handler(function (Throwable $ex): void {
+    acc_error_page(acc_log_error(get_class($ex), $ex->getMessage(), $ex->getFile(), $ex->getLine()));
+});
+register_shutdown_function(function (): void {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        @ini_set('memory_limit', '-1');   // the fatal may have been "out of memory" — give the logger room
+        acc_error_page(acc_log_error('Fatal error', $e['message'], $e['file'], $e['line']));
+    }
+});
+
 // Security headers for every accounts response.
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
@@ -55,10 +101,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && empty($_POST) && empty($_FI
 // Reject input that isn't valid UTF-8. MySQL would otherwise silently cut the
 // text at the first bad byte (e.g. "Nabil – Current" saved as "Nabil ").
 (function () {
-    $valid = function (array $data) use (&$valid): bool {
+    // preg's /u flag fails on invalid UTF-8 — works even where mbstring isn't installed.
+    $isUtf8 = fn(string $s): bool => function_exists('mb_check_encoding') ? mb_check_encoding($s, 'UTF-8') : preg_match('//u', $s) === 1;
+    $valid = function (array $data) use (&$valid, $isUtf8): bool {
         foreach ($data as $k => $v) {
-            if (!mb_check_encoding((string)$k, 'UTF-8')) return false;
-            if (is_array($v) ? !$valid($v) : !mb_check_encoding((string)$v, 'UTF-8')) return false;
+            if (!$isUtf8((string)$k)) return false;
+            if (is_array($v) ? !$valid($v) : !$isUtf8((string)$v)) return false;
         }
         return true;
     };
