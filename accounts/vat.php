@@ -132,7 +132,7 @@ require __DIR__ . '/includes/layout-top.php';
                         <?= $filing['voucher_no'] ? ' · <a href="journal-entry.php?id=' . (int)$filing['journal_entry_id'] . '">' . e($filing['voucher_no']) . '</a>' : '' ?></p>
                     <?php if ($filing['notes']): ?><p class="text-body-secondary mb-2"><?= e($filing['notes']) ?></p><?php endif ?>
                     <?php if ($isAdmin): ?>
-                        <form method="post" class="d-print-none" onsubmit="const r = prompt('Reason for voiding this VAT filing?'); if (!r) return false; this.reason.value = r;">
+                        <form method="post" class="d-print-none" data-confirm="Void this VAT filing? Its voucher will be cancelled." data-confirm-reason="Reason for voiding" data-confirm-ok="Void">
                             <?= csrf_field() ?><input type="hidden" name="action" value="void"><input type="hidden" name="filing_id" value="<?= (int)$filing['id'] ?>"><input type="hidden" name="reason">
                             <button class="btn btn-sm btn-link text-danger p-0">Void this filing (admin)</button>
                         </form>
@@ -158,7 +158,7 @@ require __DIR__ . '/includes/layout-top.php';
                                     <select class="form-select form-select-sm" id="account_id" name="account_id"><?php foreach ($accounts as $a): ?><option value="<?= (int)$a['id'] ?>"><?= e($a['code'] . ' · ' . $a['name']) ?></option><?php endforeach ?></select></div>
                             <?php endif ?>
                             <div class="col-sm-4"><label class="form-label small fw-semibold mb-1" for="reference">IRD voucher / ref</label><input class="form-control form-control-sm" id="reference" name="reference" maxlength="100"></div>
-                            <div class="col-12"><button class="btn btn-sm btn-primary" onclick="return confirm('Record the VAT return for <?= e(period_label($py, $pm)) ?>?')"><i class="fa-solid fa-check me-1"></i> <?= $s['payable'] ? 'Record return &amp; payment' : 'Record return (nothing to pay)' ?></button></div>
+                            <div class="col-12"><button class="btn btn-sm btn-primary" data-confirm="Record the VAT return for <?= e(period_label($py, $pm)) ?>?"><i class="fa-solid fa-check me-1"></i> <?= $s['payable'] ? 'Record return &amp; payment' : 'Record return (nothing to pay)' ?></button></div>
                         </div>
                     </form>
                 <?php elseif ($canEdit): ?>

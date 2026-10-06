@@ -92,7 +92,7 @@ require __DIR__ . '/includes/layout-top.php';
                         <?php endforeach ?>
                     </tbody></table>
                     <?php if ($isAdmin): ?>
-                        <form method="post" class="border-top px-3 py-2" onsubmit="return confirm('Reopen the latest reconciliation? Its items become uncleared again.')">
+                        <form method="post" class="border-top px-3 py-2" data-confirm="Reopen the latest reconciliation? Its items become uncleared again.">
                             <?= csrf_field() ?><input type="hidden" name="action" value="undo">
                             <button class="btn btn-sm btn-link text-danger p-0">Undo the latest reconciliation (admin)</button>
                         </form>
@@ -146,7 +146,7 @@ require __DIR__ . '/includes/layout-top.php';
 
         <div class="d-flex flex-wrap justify-content-between gap-2 mb-4">
             <div class="d-flex gap-2">
-                <button name="action" value="cancel" class="btn btn-outline-danger" formnovalidate onclick="return confirm('Discard this reconciliation?')">Discard</button>
+                <button name="action" value="cancel" class="btn btn-outline-danger" formnovalidate data-confirm="Discard this reconciliation?">Discard</button>
                 <a href="cash-entry.php?account=<?= $id ?>&direction=out" class="btn btn-outline-secondary" target="_blank" rel="noopener"><i class="fa-solid fa-plus me-1"></i> Record a bank charge</a>
             </div>
             <div class="d-flex gap-2">

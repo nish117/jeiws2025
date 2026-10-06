@@ -16,7 +16,7 @@ $inlineScript = $inlineScript ?? '';
 <?php foreach ($pageScripts as $src): ?>
 <script src="<?= e($src) ?>"></script>
 <?php endforeach ?>
-<script src="<?= e(acc_url('assets/js/accounts.js')) ?>?v=1"></script>
+<script src="<?= e(acc_url('assets/js/accounts.js')) ?>?v=3"></script>
 <?php if ($inlineScript): ?>
 <script><?= $inlineScript ?></script>
 <?php endif ?>

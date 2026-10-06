@@ -218,7 +218,7 @@ require __DIR__ . '/includes/accounting-nav.php';
             <div class="border-top px-4 py-3 d-flex justify-content-between gap-2">
                 <?php if ($editing && !$editing['system_key']): ?>
                     <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate
-                            onclick="return confirm('Delete account <?= e($editing['code']) ?>? This only works if it has no transactions.')">Delete</button>
+                            data-confirm="Delete account <?= e($editing['code']) ?>? This only works if it has no transactions.">Delete</button>
                 <?php else: ?><span></span><?php endif ?>
                 <button class="btn btn-primary"><?= $editing ? 'Save changes' : 'Create account' ?></button>
             </div>

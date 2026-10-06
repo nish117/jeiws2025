@@ -8,6 +8,19 @@ $meta = INVOICE_TYPES[$type];
 $status = (string)($_GET['status'] ?? 'open');
 $q = trim((string)($_GET['q'] ?? ''));
 
+// Fiscal years (Shrawan–Ashadh) from the oldest bill up to now; always offers this year and last.
+$currentFy = fiscal_year_for(date('Y-m-d'));
+$oldest = db()->prepare('SELECT MIN(invoice_date) FROM acc_invoices WHERE type = ?');
+$oldest->execute([$type]);
+$firstStart = (int)substr(($oldestDate = $oldest->fetchColumn()) ? fiscal_year_for($oldestDate) : $currentFy, 0, 4);
+$fiscalYears = [];
+for ($y = (int)substr($currentFy, 0, 4); $y >= min($firstStart, (int)substr($currentFy, 0, 4) - 1); $y--) {
+    $fiscalYears[] = sprintf('%d/%02d', $y, ($y + 1) % 100);
+}
+$fy = (string)($_GET['fy'] ?? 'all');
+if ($fy !== 'all' && !in_array($fy, $fiscalYears, true)) $fy = 'all';
+$fyRange = $fy === 'all' ? null : fiscal_year_range($fy);
+
 $where = ['i.type = ?'];
 $params = [$type];
 switch ($status) {
@@ -17,6 +30,7 @@ switch ($status) {
     default:
         if (in_array($status, ['draft', 'posted', 'paid', 'void'], true)) { $where[] = 'i.status = ?'; $params[] = $status; }
 }
+if ($fyRange) { $where[] = 'i.invoice_date BETWEEN ? AND ?'; array_push($params, ...$fyRange); }
 if ($q !== '') { $where[] = '(i.number LIKE ? OR c.name LIKE ? OR p.name LIKE ?)'; array_push($params, "%{$q}%", "%{$q}%", "%{$q}%"); }
 $stmt = db()->prepare(
     "SELECT i.*, c.name AS contact_name, p.code AS project_code,
@@ -32,7 +46,12 @@ $sum = db()->prepare("SELECT COALESCE(SUM(net_amount - amount_paid), 0) AS outst
     FROM acc_invoices WHERE type = ? AND status = 'posted'");
 $sum->execute([$type]);
 $totals = $sum->fetch();
-
+if ($fyRange) {
+    $yearSum = db()->prepare("SELECT COUNT(*) AS bills, COALESCE(SUM(total_amount), 0) AS total, COALESCE(SUM(vat_amount), 0) AS vat
+        FROM acc_invoices WHERE type = ? AND status <> 'void' AND invoice_date BETWEEN ? AND ?");
+    $yearSum->execute([$type, ...$fyRange]);
+    $yearTotals = $yearSum->fetch();
+}
 $pageTitle   = $meta['plural'];
 $activeNav   = $meta['nav'];
 $breadcrumbs = [['label' => 'Invoices', 'href' => 'invoices.php'], ['label' => $meta['plural']]];
@@ -45,7 +64,7 @@ require __DIR__ . '/includes/layout-top.php';
 
 <nav class="acc-subnav" aria-label="Invoice types">
     <?php foreach (INVOICE_TYPES as $t => $m): ?>
-        <a href="invoices.php?type=<?= $t ?>" class="<?= $t === $type ? 'active' : '' ?>"><i class="fa-solid <?= $m['icon'] ?>"></i> <?= e($m['plural']) ?></a>
+        <a href="invoices.php?type=<?= $t ?><?= $fy !== 'all' ? '&amp;fy=' . e(urlencode($fy)) : '' ?>" class="<?= $t === $type ? 'active' : '' ?>"><i class="fa-solid <?= $m['icon'] ?>"></i> <?= e($m['plural']) ?></a>
     <?php endforeach ?>
 </nav>
 
@@ -64,6 +83,15 @@ require __DIR__ . '/includes/layout-top.php';
             <div class="acc-kpi-note">Past the due date</div>
         </a>
     </div>
+    <?php if ($fyRange): ?>
+        <div class="col-sm-6 col-xl-3">
+            <div class="acc-card acc-kpi">
+                <div class="acc-kpi-top"><span class="acc-kpi-label">FY <?= e($fy) ?> total</span><span class="acc-kpi-icon acc-tone-blue"><i class="fa-solid fa-calendar-days"></i></span></div>
+                <div class="acc-kpi-value"><?= e(money($yearTotals['total'])) ?></div>
+                <div class="acc-kpi-note"><?= (int)$yearTotals['bills'] ?> <?= strtolower((int)$yearTotals['bills'] === 1 ? $meta['label'] : $meta['plural']) ?> incl. drafts<?= (float)$yearTotals['vat'] ? ' · VAT ' . e(money($yearTotals['vat'], false)) : '' ?></div>
+            </div>
+        </div>
+    <?php endif ?>
 </div>
 
 <div class="acc-card">
@@ -72,6 +100,15 @@ require __DIR__ . '/includes/layout-top.php';
         <div class="flex-grow-1" style="max-width:340px">
             <label class="form-label" for="q">Search</label>
             <input type="search" class="form-control form-control-sm" id="q" name="q" value="<?= e($q) ?>" placeholder="Number, <?= $meta['contact'] ?> or project">
+        </div>
+        <div>
+            <label class="form-label" for="fy">Fiscal year</label>
+            <select class="form-select form-select-sm" id="fy" name="fy" onchange="this.form.submit()">
+                <option value="all" <?= $fy === 'all' ? 'selected' : '' ?>>All years</option>
+                <?php foreach ($fiscalYears as $year): ?>
+                    <option value="<?= e($year) ?>" <?= $year === $fy ? 'selected' : '' ?>>FY <?= e($year) ?><?= $year === $currentFy ? ' (current)' : '' ?></option>
+                <?php endforeach ?>
+            </select>
         </div>
         <div>
             <label class="form-label" for="status">Status</label>
@@ -87,7 +124,7 @@ require __DIR__ . '/includes/layout-top.php';
     <?php if (!$rows): ?>
         <div class="acc-empty">
             <div class="acc-empty-icon"><i class="fa-solid <?= $meta['icon'] ?>"></i></div>
-            <h3>No <?= strtolower($meta['plural']) ?><?= $q || $status !== 'open' ? ' match' : ' yet' ?></h3>
+            <h3>No <?= strtolower($meta['plural']) ?><?= $q || $status !== 'open' || $fyRange ? ' match' : ' yet' ?><?= $fyRange ? ' in FY ' . e($fy) : '' ?></h3>
             <p><?= $type === 'sales'
                 ? 'Bill clients with 13% VAT, retention and TDS. Snap a photo of a bill-book invoice and type the figures beside it, or create one here.'
                 : 'Record supplier and subcontractor bills against projects. Take a photo of the bill and enter the figures while looking at it.' ?></p>
@@ -107,7 +144,7 @@ require __DIR__ . '/includes/layout-top.php';
                 </tr></thead>
                 <tbody>
                 <?php foreach ($rows as $r): $out = decimal_to_cents($r['net_amount']) - decimal_to_cents($r['amount_paid']); ?>
-                    <tr class="<?= $r['status'] === 'void' ? 'acc-inactive' : '' ?>" style="cursor:pointer" onclick="location.href='invoice.php?id=<?= (int)$r['id'] ?>'">
+                    <tr class="<?= $r['status'] === 'void' ? 'acc-inactive' : '' ?>" style="cursor:pointer" onclick="location.href='invoice.php?id=<?= (int)$r['id'] ?>'" data-peek="invoice-peek.php?id=<?= (int)$r['id'] ?>">
                         <td class="text-nowrap">
                             <a class="fw-semibold text-decoration-none" href="invoice.php?id=<?= (int)$r['id'] ?>"><?= e($r['number'] ?? 'Draft #' . $r['id']) ?></a>
                             <?php if ($r['files']): ?><i class="fa-solid fa-paperclip text-body-tertiary ms-1" title="<?= (int)$r['files'] ?> attachment(s)"></i><?php endif ?>

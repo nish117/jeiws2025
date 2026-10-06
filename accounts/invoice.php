@@ -46,6 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $files = list_attachments('invoice', $id);
+$justSaved = ($_SESSION['invoice_saved']['id'] ?? null) === $id ? $_SESSION['invoice_saved'] : null;
+unset($_SESSION['invoice_saved']);
+$newUrl = 'invoice-edit.php?type=' . $type;
 $m = fn(string|int|float|null $v) => money($v, false);
 $outstanding = decimal_to_cents($inv['net_amount']) - decimal_to_cents($inv['amount_paid']);
 $journal = $inv['journal_entry_id'] ? db()->query('SELECT voucher_no FROM acc_journal_entries WHERE id = ' . (int)$inv['journal_entry_id'])->fetchColumn() : null;
@@ -58,9 +61,33 @@ $pageActions = '<button type="button" class="btn btn-outline-secondary" onclick=
 if ($canEdit && $inv['status'] === 'draft') {
     $pageActions .= '<a class="btn btn-outline-secondary" href="invoice-edit.php?id=' . $id . '"><i class="fa-solid fa-pen me-1"></i> Edit</a>';
 }
+if ($canEdit) {
+    $pageActions .= '<a class="btn btn-primary" href="' . e($newUrl) . '"><i class="fa-solid fa-plus me-1"></i> New ' . e(strtolower($meta['label'])) . '</a>';
+}
 require __DIR__ . '/includes/layout-top.php';
 ?>
 
+<?php if ($justSaved): ?>
+    <div class="acc-saved-banner d-print-none">
+        <div class="d-flex align-items-center gap-3">
+            <span class="acc-saved-icon"><i class="fa-solid fa-check"></i></span>
+            <div>
+                <div class="fw-semibold"><?= e($justSaved['message']) ?></div>
+                <div class="small text-body-secondary">Have more <?= e(strtolower($meta['plural'])) ?> to enter?</div>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <?php if ($justSaved['photo']): ?>
+                <a class="btn btn-primary" href="<?= e($newUrl) ?>&amp;photo=1" autofocus><i class="fa-solid fa-camera me-1"></i> Add another with photo</a>
+                <a class="btn btn-outline-primary" href="<?= e($newUrl) ?>"><i class="fa-solid fa-plus me-1"></i> Add another</a>
+            <?php else: ?>
+                <a class="btn btn-primary" href="<?= e($newUrl) ?>" autofocus><i class="fa-solid fa-plus me-1"></i> Add another <?= e(strtolower($meta['label'])) ?></a>
+                <a class="btn btn-outline-primary" href="<?= e($newUrl) ?>&amp;photo=1"><i class="fa-solid fa-camera me-1"></i> With photo</a>
+            <?php endif ?>
+            <a class="btn btn-outline-secondary" href="invoices.php?type=<?= e($type) ?>">All <?= e(strtolower($meta['plural'])) ?></a>
+        </div>
+    </div>
+<?php endif ?>
 <?php if ($errors): ?>
     <div class="alert alert-danger"><?php foreach ($errors as $err): ?><div><i class="fa-solid fa-circle-exclamation me-1"></i><?= e($err) ?></div><?php endforeach ?></div>
 <?php endif ?>
@@ -68,7 +95,7 @@ require __DIR__ . '/includes/layout-top.php';
     <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 d-print-none">
         <span><i class="fa-solid fa-pen-ruler me-1"></i> Draft — not in the books yet.<?= $isSales && !$inv['number'] ? ' The invoice number is assigned when you post.' : '' ?></span>
         <?php if ($canEdit): ?>
-            <form method="post"><?= csrf_field() ?><button name="action" value="post" class="btn btn-sm btn-primary" onclick="return confirm('Post to the books? It can\'t be edited afterwards.')"><i class="fa-solid fa-check me-1"></i> Post now</button></form>
+            <form method="post"><?= csrf_field() ?><button name="action" value="post" class="btn btn-sm btn-primary" data-confirm="Post to the books? It can't be edited afterwards."><i class="fa-solid fa-check me-1"></i> Post now</button></form>
         <?php endif ?>
     </div>
 <?php elseif ($inv['status'] === 'void'): ?>
@@ -180,7 +207,7 @@ require __DIR__ . '/includes/layout-top.php';
                             <a href="attachment.php?id=<?= (int)$att['id'] ?>&download=1" class="text-truncate"><i class="fa-solid fa-download me-1"></i><?= e($att['original_name']) ?></a>
                             <span class="text-body-secondary text-nowrap"><?= number_format($att['size_bytes'] / 1024) ?> KB</span>
                             <?php if ($canEdit): ?>
-                                <form method="post" onsubmit="return confirm('Remove this file?')"><?= csrf_field() ?><input type="hidden" name="action" value="delete_file"><input type="hidden" name="attachment_id" value="<?= (int)$att['id'] ?>"><button class="btn btn-sm btn-link text-danger p-0" title="Remove"><i class="fa-solid fa-trash"></i></button></form>
+                                <form method="post" data-confirm="Remove this file?"><?= csrf_field() ?><input type="hidden" name="action" value="delete_file"><input type="hidden" name="attachment_id" value="<?= (int)$att['id'] ?>"><button class="btn btn-sm btn-link text-danger p-0" title="Remove"><i class="fa-solid fa-trash"></i></button></form>
                             <?php endif ?>
                         </li>
                     <?php endforeach ?>
@@ -255,7 +282,7 @@ require __DIR__ . '/includes/layout-top.php';
         <?php endif ?>
 
         <?php if ($isAdmin && in_array($inv['status'], ['posted', 'paid'], true)): ?>
-            <form method="post" class="acc-card" onsubmit="return confirm('Void this <?= strtolower($meta['label']) ?>? Its voucher will be cancelled.')">
+            <form method="post" class="acc-card" data-confirm="Void this <?= e(strtolower($meta['label'])) ?>? Its voucher will be cancelled.">
                 <?= csrf_field() ?><input type="hidden" name="action" value="void">
                 <div class="acc-card-body">
                     <label class="form-label fw-semibold small" for="void_reason">Void (admin only)</label>

@@ -144,7 +144,7 @@ require __DIR__ . '/includes/layout-top.php';
     <div class="border-top px-4 py-3 d-flex flex-wrap justify-content-between gap-2">
         <div>
             <?php if ($project): ?>
-                <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate onclick="return confirm('Delete this project? Only possible if nothing is tagged to it.')">Delete</button>
+                <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate data-confirm="Delete this project? Only possible if nothing is tagged to it.">Delete</button>
             <?php else: ?>
                 <a href="projects.php" class="btn btn-link text-body-secondary">Cancel</a>
             <?php endif ?>

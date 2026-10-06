@@ -126,7 +126,7 @@ require __DIR__ . '/includes/layout-top.php';
     <div class="border-top px-4 py-3 d-flex flex-wrap justify-content-between gap-2">
         <div>
             <?php if ($contact): ?>
-                <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate onclick="return confirm('Delete <?= e(addslashes($contact['name'])) ?>? This only works if they have no transactions or projects.')">Delete</button>
+                <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate data-confirm="Delete <?= e($contact['name']) ?>? This only works if they have no transactions or projects.">Delete</button>
             <?php else: ?>
                 <a href="<?= $meta['page'] ?>" class="btn btn-link text-body-secondary">Cancel</a>
             <?php endif ?>

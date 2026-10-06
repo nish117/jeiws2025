@@ -109,7 +109,7 @@ require __DIR__ . '/includes/layout-top.php';
                             <td class="num"><?= e(money($f['amount'], false)) ?></td>
                             <td class="text-end">
                                 <?php if ($isAdmin): ?>
-                                    <form method="post" class="d-print-none" onsubmit="const r = prompt('Reason for voiding?'); if (!r) return false; this.reason.value = r;">
+                                    <form method="post" class="d-print-none" data-confirm="Void this income tax entry? Its voucher will be cancelled." data-confirm-reason="Reason for voiding" data-confirm-ok="Void">
                                         <?= csrf_field() ?><input type="hidden" name="action" value="void"><input type="hidden" name="filing_id" value="<?= (int)$f['id'] ?>"><input type="hidden" name="reason">
                                         <button class="btn btn-sm btn-link text-danger p-0">Void</button>
                                     </form>
@@ -157,7 +157,7 @@ require __DIR__ . '/includes/layout-top.php';
             </form>
 
             <?php if (!$t['provision']): ?>
-                <form method="post" class="acc-card" onsubmit="return confirm('Book the income tax provision for FY <?= e($fy) ?>?')">
+                <form method="post" class="acc-card" data-confirm="Book the income tax provision for FY <?= e($fy) ?>?">
                     <?= csrf_field() ?><input type="hidden" name="action" value="provision">
                     <div class="acc-card-head"><h2>Year-end provision</h2></div>
                     <div class="acc-card-body">

@@ -96,7 +96,7 @@ require __DIR__ . '/includes/layout-top.php';
 </div>
 
 <?php if ($isAdmin && $p['status'] === 'active'): ?>
-    <form method="post" class="acc-card mt-3 d-print-none" style="max-width:820px" onsubmit="return confirm('Void this payment? Its voucher is cancelled and the invoices it paid become unpaid again by those amounts.')">
+    <form method="post" class="acc-card mt-3 d-print-none" style="max-width:820px" data-confirm="Void this payment? Its voucher is cancelled and the invoices it paid become unpaid again by those amounts.">
         <?= csrf_field() ?><input type="hidden" name="action" value="void">
         <div class="acc-card-body d-flex flex-wrap align-items-end gap-2">
             <div class="flex-grow-1">

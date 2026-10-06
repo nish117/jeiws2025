@@ -161,6 +161,15 @@ function project_options(): array {
     return $projects;
 }
 
+/**
+ * Projects to offer in entry forms: completed and cancelled ones are left out (as on the Projects
+ * page), except any in $keepIds — e.g. the project an existing record is already tagged with.
+ */
+function active_project_options(array $keepIds = []): array {
+    $keep = array_flip(array_map('intval', array_filter($keepIds)));
+    return array_filter(project_options(), fn($p) => !in_array($p['status'], ['completed', 'cancelled'], true) || isset($keep[(int)$p['id']]));
+}
+
 /** Clients and suppliers, keyed by id: [id => [id, type, name, is_active]]. */
 function contact_options(): array {
     static $contacts = null;

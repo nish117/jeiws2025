@@ -33,10 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($up['errors'] as $err) flash('warning', $err);
             if (($_POST['action'] ?? '') === 'save_post') {
                 $number = post_invoice($savedId, (int)$user['id']);
-                flash('success', "{$meta['label']} {$number} posted to the books.");
+                $message = "{$meta['label']} {$number} posted to the books.";
             } else {
-                flash('success', 'Draft saved' . ($up['saved'] ? " with {$up['saved']} attachment" . ($up['saved'] > 1 ? 's' : '') : '') . '.');
+                $message = 'Draft saved' . ($up['saved'] ? " with {$up['saved']} attachment" . ($up['saved'] > 1 ? 's' : '') : '') . '.';
             }
+            // Shown on the bill page with an "Add another" button (see invoice.php).
+            $_SESSION['invoice_saved'] = ['id' => $savedId, 'message' => $message, 'photo' => (bool)list_attachments('invoice', $savedId)];
             redirect('invoice.php?id=' . $savedId);
         } catch (DomainException $ex) {
             $errors[] = $ex->getMessage();
@@ -68,7 +70,11 @@ if (!$f['lines']) $f['lines'][] = ['vat_applicable' => 1, 'account_id' => $defau
 $contactRows = db()->prepare('SELECT id, name, pan_number, vat_registered, tds_category, is_active FROM acc_contacts WHERE type = ? ORDER BY name');
 $contactRows->execute([$meta['contact']]);
 $contacts = array_filter($contactRows->fetchAll(), fn($c) => $c['is_active'] || (int)$c['id'] === (int)($f['contact_id'] ?? 0));
-$projectRows = db()->query("SELECT id, code, name, retention_percent, status FROM acc_projects ORDER BY status IN ('completed','cancelled'), name")->fetchAll();
+// Completed / cancelled projects are hidden, unless this bill is already tagged with one.
+$projectRows = db()->prepare("SELECT id, code, name, retention_percent, status FROM acc_projects
+    WHERE status NOT IN ('completed','cancelled') OR id = ? ORDER BY name");
+$projectRows->execute([(int)($f['project_id'] ?? 0)]);
+$projectRows = $projectRows->fetchAll();
 $lineAccounts = invoice_line_accounts($type);
 $existingFiles = $inv ? list_attachments('invoice', $id) : [];
 $vatRate = (float)setting('vat_rate', '13');
@@ -255,14 +261,14 @@ $isSales = $type === 'sales';
             <div class="d-flex flex-wrap justify-content-between gap-2 mb-4">
                 <div>
                     <?php if ($inv): ?>
-                        <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate onclick="return confirm('Delete this draft and its attachments?')">Delete draft</button>
+                        <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate data-confirm="Delete this draft and its attachments?">Delete draft</button>
                     <?php else: ?>
                         <a href="invoices.php?type=<?= $type ?>" class="btn btn-link text-body-secondary">Cancel</a>
                     <?php endif ?>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="submit" name="action" value="save" class="btn btn-outline-secondary">Save draft</button>
-                    <button type="submit" name="action" value="save_post" class="btn btn-primary" onclick="return confirm('Post this <?= strtolower($meta['label']) ?> to the books? It can\'t be edited afterwards (only voided).')"><i class="fa-solid fa-check me-1"></i> Save &amp; post</button>
+                    <button type="submit" name="action" value="save_post" class="btn btn-primary" data-confirm="Post this <?= e(strtolower($meta['label'])) ?> to the books? It can't be edited afterwards (only voided)."><i class="fa-solid fa-check me-1"></i> Save &amp; post</button>
                 </div>
             </div>
         </div>

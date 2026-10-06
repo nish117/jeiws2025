@@ -22,7 +22,7 @@ $f = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : ['account_id' => (int)($_G
 $defaultCounter = (int)($f['counter_account_id'] ?? 0) ?: ($direction === 'out'
     ? system_account_id('bank_charges')
     : (int)db()->query("SELECT id FROM acc_accounts WHERE code = '4310'")->fetchColumn());
-$projects = project_options();
+$projects = active_project_options([$f['project_id'] ?? 0]);
 
 $pageTitle   = 'Other cash / bank entry';
 $activeNav   = 'cash-bank';

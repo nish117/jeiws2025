@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } else {
     $f = ['gender' => '', 'marital_status' => '', 'join_date' => date('Y-m-d'), 'is_active' => 1];
 }
-$projects = project_options();
+$projects = active_project_options([$f['project_id'] ?? 0]);
 $cur = e(setting('currency_symbol', 'Rs.'));
 
 $pageTitle   = $emp ? "Edit {$emp['full_name']}" : 'New employee';
@@ -179,7 +179,7 @@ require __DIR__ . '/includes/layout-top.php';
         <div class="border-top px-4 py-3 d-flex flex-wrap justify-content-between gap-2">
             <div>
                 <?php if ($emp): ?>
-                    <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate onclick="return confirm('Delete this employee? Only possible if they have no payslips.')">Delete</button>
+                    <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate data-confirm="Delete this employee? Only possible if they have no payslips.">Delete</button>
                 <?php else: ?>
                     <a href="employees.php" class="btn btn-link text-body-secondary">Cancel</a>
                 <?php endif ?>

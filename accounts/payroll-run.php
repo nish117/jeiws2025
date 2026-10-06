@@ -190,7 +190,7 @@ require __DIR__ . '/includes/layout-top.php';
         <?php if ($isDraft): ?>
             <div class="border-top px-4 py-3 d-flex flex-wrap align-items-end justify-content-between gap-3">
                 <div class="d-flex gap-2">
-                    <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate onclick="return confirm('Delete this draft payroll?')">Delete draft</button>
+                    <button type="submit" name="action" value="delete" class="btn btn-outline-danger" formnovalidate data-confirm="Delete this draft payroll?">Delete draft</button>
                     <button type="submit" name="action" value="save" class="btn btn-outline-secondary"><i class="fa-solid fa-calculator me-1"></i> Recalculate</button>
                 </div>
                 <div class="d-flex align-items-end gap-2">
@@ -198,7 +198,7 @@ require __DIR__ . '/includes/layout-top.php';
                         <label class="form-label small fw-semibold mb-1" for="post_date">Posting date</label>
                         <input type="date" class="form-control form-control-sm" id="post_date" name="post_date" value="<?= e($run['period_end']) ?>">
                     </div>
-                    <button type="submit" name="action" value="save_post" class="btn btn-primary" onclick="return confirm('Post payroll <?= e($period) ?> to the books? Payslips can\'t be edited afterwards (you can void and redo).')"><i class="fa-solid fa-check me-1"></i> Post to books</button>
+                    <button type="submit" name="action" value="save_post" class="btn btn-primary" data-confirm="Post payroll <?= e($period) ?> to the books? Payslips can't be edited afterwards (you can void and redo)."><i class="fa-solid fa-check me-1"></i> Post to books</button>
                 </div>
             </div>
         <?php endif ?>
@@ -290,14 +290,14 @@ require __DIR__ . '/includes/layout-top.php';
                 <?php if ($emailed < count($slips)): ?>
                     <button name="only_unsent" value="1" class="btn btn-sm btn-primary"><i class="fa-regular fa-paper-plane me-1"></i> Send to everyone not yet emailed</button>
                 <?php endif ?>
-                <button class="btn btn-sm btn-outline-secondary" onclick="return confirm('Email every employee their payslip again?')">Resend to all</button>
+                <button class="btn btn-sm btn-outline-secondary" data-confirm="Email every employee their payslip again?">Resend to all</button>
             </form>
         <?php endif ?>
     </div>
 <?php endif ?>
 
 <?php if (in_array($run['status'], ['posted', 'paid'], true) && $user['role'] === 'admin'): ?>
-    <form method="post" class="acc-card d-print-none" onsubmit="return confirm('Void payroll <?= e($period) ?>? Its vouchers will be voided and the month can be run again.')">
+    <form method="post" class="acc-card d-print-none" data-confirm="Void payroll <?= e($period) ?>? Its vouchers will be voided and the month can be run again.">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="void">
         <div class="acc-card-body d-flex flex-wrap align-items-end gap-2">

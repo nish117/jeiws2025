@@ -149,7 +149,7 @@ require __DIR__ . '/includes/layout-top.php';
                     Deposited <strong><?= e(money($filing['amount'])) ?></strong> on <?= e(bs_date($filing['filing_date'])) ?> B.S.<?= $filing['reference'] ? ' · ref ' . e($filing['reference']) : '' ?>
                     · <a href="journal-entry.php?id=<?= (int)$filing['journal_entry_id'] ?>"><?= e($filing['voucher_no']) ?></a>
                     <?php if ($isAdmin): ?>
-                        <form method="post" class="mt-2 d-print-none" onsubmit="const r = prompt('Reason for voiding this deposit?'); if (!r) return false; this.reason.value = r;">
+                        <form method="post" class="mt-2 d-print-none" data-confirm="Void this TDS deposit? Its voucher will be cancelled." data-confirm-reason="Reason for voiding" data-confirm-ok="Void">
                             <?= csrf_field() ?><input type="hidden" name="action" value="void"><input type="hidden" name="filing_id" value="<?= (int)$filing['id'] ?>"><input type="hidden" name="reason">
                             <button class="btn btn-sm btn-link text-danger p-0">Void (admin)</button>
                         </form>

@@ -126,7 +126,7 @@ $dis = $isAdmin ? '' : 'disabled';
     </div>
     <?php if ($isAdmin): ?>
         <div class="d-flex justify-content-between mt-3">
-            <button type="submit" name="action" value="reset" class="btn btn-outline-secondary" formnovalidate onclick="return confirm('Reset all payroll rates to the built-in defaults?')">Reset to defaults</button>
+            <button type="submit" name="action" value="reset" class="btn btn-outline-secondary" formnovalidate data-confirm="Reset all payroll rates to the built-in defaults?">Reset to defaults</button>
             <button type="submit" name="action" value="save" class="btn btn-primary">Save rates</button>
         </div>
     <?php endif ?>

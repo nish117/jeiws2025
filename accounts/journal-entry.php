@@ -94,7 +94,7 @@ if ($editMode) {
         ];
     while (count($form['lines']) < 2) $form['lines'][] = [];
     $accountsByType = postable_accounts_by_type();
-    $projects = project_options();
+    $projects = active_project_options(array_column($form['lines'], 'project_id'));
     $contacts = contact_options();
 }
 
@@ -315,7 +315,7 @@ JS;
         <?php if ($canEdit): ?>
             <form method="post" class="d-flex gap-2">
                 <?= csrf_field() ?>
-                <button name="action" value="delete" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this draft?')">Delete draft</button>
+                <button name="action" value="delete" class="btn btn-sm btn-outline-danger" data-confirm="Delete this draft?">Delete draft</button>
                 <button name="action" value="post" class="btn btn-sm btn-primary"><i class="fa-solid fa-check me-1"></i> Post now</button>
             </form>
         <?php endif ?>
@@ -384,7 +384,7 @@ JS;
 </div>
 
 <?php if ($canEdit && $entry['status'] === 'posted' && $entry['source'] === 'manual'): ?>
-    <form method="post" class="acc-card mt-3 d-print-none" onsubmit="return confirm('Void voucher <?= e($entry['voucher_no']) ?>? It will stop affecting all balances. This cannot be undone.')">
+    <form method="post" class="acc-card mt-3 d-print-none" data-confirm="Void voucher <?= e($entry['voucher_no']) ?>? It will stop affecting all balances. This cannot be undone.">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="void">
         <div class="acc-card-body d-flex flex-wrap align-items-end gap-2">
