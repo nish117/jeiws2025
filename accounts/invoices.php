@@ -95,6 +95,32 @@ require __DIR__ . '/includes/layout-top.php';
 </div>
 
 <div class="acc-card">
+    <?php
+    $dash = '<span class="text-body-tertiary">—</span>';
+    $amt = fn(string $col) => fn($r) => (float)$r[$col] ? e(money($r[$col], false)) : $dash;
+    $outOf = fn($r) => $r['status'] === 'posted' ? decimal_to_cents($r['net_amount']) - decimal_to_cents($r['amount_paid']) : 0;
+    // key => [label, extra cell classes, shown by default, cell renderer, footer total (cents) or null]
+    // Shown-by-default columns keep their responsive classes (hidden on small screens) until the user picks otherwise.
+    $columns = [
+        'date'        => ['Date', 'text-nowrap', true, fn($r) => e(bs_date($r['invoice_date'])) . '<div class="small text-body-secondary">' . e(date('d M Y', strtotime($r['invoice_date']))) . '</div>', null],
+        'due'         => ['Due date', 'text-nowrap', false, fn($r) => $r['due_date'] ? e(bs_date($r['due_date'])) : $dash, null],
+        'contact'     => [ucfirst($meta['contact']), '', true, fn($r) => e($r['contact_name']), null],
+        'project'     => ['Project', 'd-none d-lg-table-cell small', true, fn($r) => e($r['project_code'] ?? '—'), null],
+        'taxable'     => ['Taxable', 'num d-none d-md-table-cell', true, $amt('taxable_amount'), 'taxable_amount'],
+        'exempt'      => ['Non-taxable', 'num', false, $amt('exempt_amount'), 'exempt_amount'],
+        'vat'         => ['VAT', 'num d-none d-md-table-cell', true, $amt('vat_amount'), 'vat_amount'],
+        'total'       => ['Total', 'num', true, fn($r) => e(money($r['total_amount'], false)), 'total_amount'],
+        'retention'   => ['Retention', 'num', false, $amt('retention_amount'), 'retention_amount'],
+        'tds'         => ['TDS', 'num', false, $amt('tds_amount'), 'tds_amount'],
+        'paid'        => [$meta['paid_label'], 'num', false, $amt('amount_paid'), 'amount_paid'],
+        'outstanding' => ['Outstanding', 'num d-none d-md-table-cell', true, fn($r) => $r['status'] === 'posted' ? e(money_cents($outOf($r))) : $dash, 'outstanding'],
+        'status'      => ['Status', '', true, fn($r) => invoice_status_badge($r), null],
+    ];
+    $leadCols = ['number', 'date', 'due', 'contact', 'project'];   // the footer's "Total" label spans these
+    $cellAttr = fn(string $key, array $c) => ' data-col="' . $key . '" class="' . trim($c[1] . ($c[2] ? '' : ' acc-col-hidden')) . '"';
+    $live = array_filter($rows, fn($r) => $r['status'] !== 'void');
+    $sumOf = fn(string $col) => array_sum(array_map(fn($r) => $col === 'outstanding' ? $outOf($r) : decimal_to_cents($r[$col]), $live));
+    ?>
     <form class="acc-filters" method="get">
         <input type="hidden" name="type" value="<?= $type ?>">
         <div class="flex-grow-1" style="max-width:340px">
@@ -119,6 +145,25 @@ require __DIR__ . '/includes/layout-top.php';
             </select>
         </div>
         <button class="btn btn-sm btn-outline-secondary">Apply</button>
+        <?php if ($rows): ?>
+            <div class="dropdown ms-auto" data-col-picker="invoices-<?= $type ?>">
+                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                    <i class="fa-solid fa-table-columns me-1"></i> Columns
+                </button>
+                <div class="dropdown-menu dropdown-menu-end acc-col-menu">
+                    <div class="dropdown-header">Show columns</div>
+                    <div class="acc-col-grid">
+                    <?php foreach ($columns as $key => $c): ?>
+                        <label class="dropdown-item d-flex align-items-center gap-2">
+                            <input class="form-check-input m-0" type="checkbox" data-col-toggle="<?= $key ?>"> <?= e($c[0]) ?>
+                        </label>
+                    <?php endforeach ?>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <button type="button" class="dropdown-item small text-body-secondary" data-col-reset><i class="fa-solid fa-rotate-left me-1"></i> Reset to default</button>
+                </div>
+            </div>
+        <?php endif ?>
     </form>
 
     <?php if (!$rows): ?>
@@ -137,27 +182,30 @@ require __DIR__ . '/includes/layout-top.php';
         </div>
     <?php else: ?>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" data-col-table="invoices-<?= $type ?>">
                 <thead><tr>
-                    <th>Number</th><th>Date</th><th><?= ucfirst($meta['contact']) ?></th><th class="d-none d-lg-table-cell">Project</th>
-                    <th class="num">Total</th><th class="num d-none d-md-table-cell">Outstanding</th><th>Status</th>
+                    <th data-col="number">Number</th>
+                    <?php foreach ($columns as $key => $c): ?><th<?= $cellAttr($key, $c) ?>><?= e($c[0]) ?></th><?php endforeach ?>
                 </tr></thead>
                 <tbody>
-                <?php foreach ($rows as $r): $out = decimal_to_cents($r['net_amount']) - decimal_to_cents($r['amount_paid']); ?>
+                <?php foreach ($rows as $r): ?>
                     <tr class="<?= $r['status'] === 'void' ? 'acc-inactive' : '' ?>" style="cursor:pointer" onclick="location.href='invoice.php?id=<?= (int)$r['id'] ?>'" data-peek="invoice-peek.php?id=<?= (int)$r['id'] ?>">
-                        <td class="text-nowrap">
+                        <td class="text-nowrap" data-col="number">
                             <a class="fw-semibold text-decoration-none" href="invoice.php?id=<?= (int)$r['id'] ?>"><?= e($r['number'] ?? 'Draft #' . $r['id']) ?></a>
                             <?php if ($r['files']): ?><i class="fa-solid fa-paperclip text-body-tertiary ms-1" title="<?= (int)$r['files'] ?> attachment(s)"></i><?php endif ?>
                         </td>
-                        <td class="text-nowrap"><?= e(bs_date($r['invoice_date'])) ?><div class="small text-body-secondary"><?= e(date('d M Y', strtotime($r['invoice_date']))) ?></div></td>
-                        <td><?= e($r['contact_name']) ?></td>
-                        <td class="d-none d-lg-table-cell small"><?= e($r['project_code'] ?? '—') ?></td>
-                        <td class="num"><?= e(money($r['total_amount'], false)) ?></td>
-                        <td class="num d-none d-md-table-cell"><?= in_array($r['status'], ['posted'], true) ? e(money_cents($out)) : '<span class="text-body-tertiary">—</span>' ?></td>
-                        <td><?= invoice_status_badge($r) ?></td>
+                        <?php foreach ($columns as $key => $c): ?><td<?= $cellAttr($key, $c) ?>><?= $c[3]($r) ?></td><?php endforeach ?>
                     </tr>
                 <?php endforeach ?>
                 </tbody>
+                <?php if (count($rows) > 1): ?>
+                    <tfoot><tr class="table-total">
+                        <td colspan="3" data-col-span="<?= implode(' ', $leadCols) ?>">Total · <?= count($live) ?> <?= strtolower(count($live) === 1 ? $meta['label'] : $meta['plural']) ?><?= count($live) < count($rows) ? ' <span class="fw-normal small text-body-secondary">(void excluded)</span>' : '' ?></td>
+                        <?php foreach ($columns as $key => $c): if (in_array($key, $leadCols, true)) continue; ?>
+                            <td<?= $cellAttr($key, $c) ?>><?= $c[4] ? e(money_cents($sumOf($c[4]))) : '' ?></td>
+                        <?php endforeach ?>
+                    </tr></tfoot>
+                <?php endif ?>
             </table>
         </div>
     <?php endif ?>

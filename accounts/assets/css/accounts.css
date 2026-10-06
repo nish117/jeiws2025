@@ -331,6 +331,14 @@ body.acc-body { background: var(--acc-bg); font-size: .9rem; min-height: 100vh; 
 .acc-confirm-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
 .acc-confirm-text { color: var(--acc-muted); white-space: pre-line; }
 
+/* Column picker (accounts.js, data-col-table) — must beat Bootstrap's responsive d-none / d-*-table-cell */
+.acc-col-hidden { display: none !important; }
+.acc-col-shown { display: table-cell !important; }
+.acc-col-menu { min-width: 210px; max-height: 80vh; overflow-y: auto; }
+.acc-col-grid { display: grid; grid-template-columns: 1fr; }
+@media (min-width: 576px) { .acc-col-menu { min-width: 330px; } .acc-col-grid { grid-template-columns: 1fr 1fr; } }
+.acc-col-menu .dropdown-item { cursor: pointer; padding-top: 6px; padding-bottom: 6px; }
+
 /* Hover preview card on lists (accounts.js, data-peek) */
 .acc-peek {
     position: fixed; z-index: 1070; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow: auto;

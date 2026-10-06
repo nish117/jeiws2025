@@ -229,4 +229,47 @@
     });
     window.addEventListener('scroll', () => hidePeek(true), { passive: true, capture: true });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePeek(true); });
+
+    // ── Column picker ──────────────────────────────────────────────
+    // <table data-col-table="key"> with cells marked data-col="name", and a [data-col-picker="key"] menu of
+    // checkboxes [data-col-toggle="name"]. Choices are remembered per table in this browser. A column the user
+    // hasn't touched keeps its default, including being hidden on small screens; a ticked one shows everywhere.
+    document.querySelectorAll('[data-col-table]').forEach(table => {
+        const key = 'accCols:' + table.dataset.colTable;
+        const picker = document.querySelector(`[data-col-picker="${table.dataset.colTable}"]`);
+        const head = name => table.querySelector(`thead [data-col="${name}"]`);
+        const defaultHidden = new Set(Array.from(table.querySelectorAll('thead [data-col].acc-col-hidden')).map(th => th.dataset.col));
+        let prefs = {};
+        try { prefs = JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch { /* storage blocked */ }
+
+        const isShown = name => head(name) && getComputedStyle(head(name)).display !== 'none';
+        function apply() {
+            table.querySelectorAll('[data-col]').forEach(cell => {
+                const name = cell.dataset.col, pref = prefs[name];
+                cell.classList.toggle('acc-col-hidden', pref === false || (pref === undefined && defaultHidden.has(name)));
+                cell.classList.toggle('acc-col-shown', pref === true);
+            });
+            // The footer's "Total" label spans whichever leading columns are visible.
+            table.querySelectorAll('[data-col-span]').forEach(td => {
+                td.colSpan = Math.max(1, td.dataset.colSpan.split(' ').filter(isShown).length);
+            });
+            picker?.querySelectorAll('[data-col-toggle]').forEach(box => { box.checked = isShown(box.dataset.colToggle); });
+        }
+        function save() {
+            try { Object.keys(prefs).length ? localStorage.setItem(key, JSON.stringify(prefs)) : localStorage.removeItem(key); } catch { /* storage blocked */ }
+        }
+
+        picker?.addEventListener('change', e => {
+            const box = e.target.closest('[data-col-toggle]');
+            if (!box) return;
+            prefs[box.dataset.colToggle] = box.checked;
+            save();
+            apply();
+        });
+        picker?.querySelector('[data-col-reset]')?.addEventListener('click', () => { prefs = {}; save(); apply(); });
+        picker?.addEventListener('show.bs.dropdown', apply);   // ticks reflect the current screen size
+        window.matchMedia('(min-width: 768px)').addEventListener('change', apply);
+        window.matchMedia('(min-width: 992px)').addEventListener('change', apply);
+        apply();
+    });
 })();
